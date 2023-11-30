@@ -1,0 +1,44 @@
+{
+  "name": "@workflowasm/protocols-js",
+  "version": "0.1.0",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "TypeScript types and stubs for WorkflowASM protocols, built using buf gen",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rimraf src/gen dist",
+    "build": "run-s build:proto:ts build:js",
+    "build:js": "run-p build:cjs build:esm",
+    "build:cjs": "tsc --project tsconfig.json --module commonjs --moduleResolution Node10 --outDir ./dist/cjs --declaration --declarationDir ./dist/cjs && echo >./dist/cjs/package.json '{\"type\":\"commonjs\"}'",
+    "build:esm": "tsc --project tsconfig.json --verbatimModuleSyntax --outDir ./dist/esm --declaration --declarationDir ./dist/esm",
+    "build:proto:ts": "buf generate ../protocols/dist/protocols.binpb.gz",
+    "lint:postbuild:attw": "attw --pack"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^1.4.2"
+  },
+  "devDependencies": {
+    "@bufbuild/protoc-gen-es": "^1.4.2"
+  }
+}

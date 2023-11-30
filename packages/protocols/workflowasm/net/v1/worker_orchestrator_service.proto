@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package workflowasm.net.v1;
+
+// Workers connect to an Orchestrator and request workloads from it
+// via this service running on the Orchestrator.
+service WorkerOrchestratorService {
+  // An open, live WorkChannel gRPC session represents a client Worker that is
+  // ready to be assigned jobs by the serving Orchestrator. 
+  rpc WorkChannel(stream WorkerStream) returns (stream OrchestratorStream);
+}
+
+// Union-typed message sent from Worker to Orchestrator.
+message WorkerStream {
+  // First message sent from Worker to Orchestrator. Exactly one Handshake
+  // must be sent, and it must precede any other message. The Worker must send
+  // its handshake first, to which the Orchestrator will reply with its
+  // Handshake.
+  message Handshake {
+    // Worker's hint to the Orchestrator as to how the Worker's string ID should
+    // be generated. This can be used to inject information from the Worker's
+    // environment, like pod IP, etc.
+    string id_advice = 1;
+
+    // Maximum parallel jobs to be enqueued on a Worker. The Orchestrator
+    // may treat this as a hint rather than a hard limit; hard limits should
+    // be enforced by having the Worker refuse jobs when it is overloaded.
+    int32 parallelism = 2;
+  }
+
+  // Standard liveness check. When received, must respond with Pong on
+  // the outgoing stream.
+  message Ping {}
+
+  // Standard liveness check. Sent to the outgoing stream after receiving
+  // a corresponding Ping on the incoming stream.
+  message Pong {}
+}
+
+// Union-typed message sent from Orchestrator to Worker.
+message OrchestratorStream {
+  message Handshake {
+    // The authoritative final ID string assigned by the Orchestrator to the
+    // Worker. This field is mandatory and the returned ID must be utilized
+    // in all future exchanges that require a worker ID.
+    string worker_id = 1;
+  }
+
+  // Standard liveness check. When received, must respond with Pong on
+  // the outgoing stream.
+  message Ping {}
+
+  // Standard liveness check. Sent to the outgoing stream after receiving
+  // a corresponding Ping on the incoming stream.
+  message Pong {}
+
+  // Request that the Worker begin or resume the given Job.
+  message Job {
+    // Unique id of the Job.
+    string id = 1;
+  }
+
+  oneof message_kind {
+    Handshake handshake = 1;
+    Ping ping = 2;
+    Pong pong = 3;
+  }
+} 

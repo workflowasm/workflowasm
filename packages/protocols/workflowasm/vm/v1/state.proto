@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package workflowasm.vm.v1;
+
+import "workflowasm/lang/v1/value.proto";
+
+// Serialized state of a WorkflowASM VM.
+message State {
+  // Address of a distinct instruction within an assembly.
+  message InstructionPointer {
+    // The local name of the function segment this IP points to
+    string function_segment = 1;
+
+    // Index into the function segment of the target instruction 
+    int32 instruction_index = 2;
+  }
+
+  // Value stack entry
+  message ValueStackEntry {
+      value = 1;
+  }
+
+  // Function call stack entry, including local variable state and return
+  // address
+  message CallStackEntry {
+    // Variable values
+    map<string, workflowasm.lang.v1.Value> vars = 1;
+     
+    // Instruction pointer
+    InstructionPointer instruction_pointer = 2;
+  }
+
+  // Call stack. The tail entry represents the top of the stack and therefore
+  // the currently running function.
+  repeated CallStackEntry call_stack = 1;
+
+  // Value stack. The tail entry represents the top of the stack.
+  repeated ValueStackEntry value_stack = 2;
+}

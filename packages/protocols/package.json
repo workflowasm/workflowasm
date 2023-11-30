@@ -1,0 +1,14 @@
+{
+  "name": "@workflowasm/protocols",
+  "description": "Protocol Buffers definitions for WorkflowASM",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "run-p build:proto:bin build:proto:json",
+    "build:proto:bin": "buf build -o dist/protocols.binpb.gz",
+    "build:proto:json": "run-s build:proto:json:build build:proto:json:strip",
+    "build:proto:json:build": "buf build --as-file-descriptor-set -o dist/protocols.fds.json",
+    "build:proto:json:strip": "node scripts/strip-source-info.cjs dist/protocols.fds.json"
+  }
+}

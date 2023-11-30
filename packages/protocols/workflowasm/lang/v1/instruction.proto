@@ -1,0 +1,249 @@
+syntax = "proto3";
+
+package workflowasm.lang.v1;
+
+import "cel/expr/syntax.proto";
+
+// Opcodes for WorkflowASM instructions.
+enum Opcode {
+  // No-op instruction. Execution proceeds without any effect.
+  OP_NOOP = 0;
+
+  // Push `null` to the stack.
+  //
+  // Stack signature: `[1]`
+  OP_PUSHNULL = 1;
+
+  // Push the constant integer value given by `i1` to the stack.
+  //
+  // `i1`: The literal constant to push.
+  //
+  // Stack signature: `[1]`
+  OP_PUSHINT = 2;
+
+  // Push the depth of the stack (as an integer) to the stack.
+  //
+  // Stack signature: `[1]`
+  OP_PUSHDEPTH = 3;
+
+  // Push a value from the function's constant table to the top of the
+  // value stack.
+  //
+  // `i1`: Index into the constant table of the constant to push.
+  //
+  // Stack signature: `[1]`
+  //
+  // Throws:
+  // * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in
+  // the constant table.
+  OP_PUSHK = 4;
+
+  // Compute `stack(0)[stack(-1)]` and push its value.
+  //
+  // Stack signature: `[-2, 1]`
+  //
+  // Throws:
+  // * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
+  // * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in `stack(0)`
+  // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
+  OP_PUSHINDEX = 5;
+
+  // Compute `env[stack(0)]` and push its value. `env` is either the
+  // local or global environment depending on `i1`.
+  //
+  // `i1`: If 0, use the function's local environment, falling back to global
+  // if the variable is unset. If 1, use the local environment with no
+  // fallback. If 2, use the global environment.
+  //
+  // Stack signature: `[-1, 1]`
+  //
+  // Throws:
+  // * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in `env`
+  // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 1`
+  OP_PUSHENV = 6;
+
+  // Duplicate the value at `stack(i1)` and push it. For non-primitive values,
+  // this is a deep duplication. Nothing is removed from the stack.
+  //
+  // `i1`: Stack index to duplicate.
+  //
+  // Stack signature: `[1]`
+  //
+  // Throws:
+  // * `google.rpc.Code.INVALID_ARGUMENT` if the value cannot be duplicated.
+  // * `google.rpc.Code.FAILED_PRECONDITION` if `i1` is an invalid stack index.
+  OP_DUP = 7;
+
+  // Pop `i1` values from the top of the stack, discarding them
+  //
+  // `i1`: Number of values to pop. If `0` is given, 1 value will still be
+  // popped.
+  //
+  // Stack signature: `[-i1]`
+  //
+  // Throws:
+  // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < i1`
+  OP_POP = 8;
+
+  // Roll the top `i1` values on the stack. Effectively, moves the object
+  // at `stack(-i1 + 1)` to the top of the stack.
+  //
+  // `i1`: Number of stack entries to roll.
+  //
+  // Stack signature: `[]`
+  //
+  // Throws:
+  // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < i1`
+  OP_ROLL = 9;
+
+  // Perform `env[stack(-1)] = stack(0)`. `env` is either the local or
+  // global environment depending on `i1`
+  //
+  // `i1`: If 0, use the function's local environment. If 1, use the
+  // global environment.
+  //
+  // Stack signature: `[-2]`
+  OP_SETENV = 10;
+
+  // Remove `env[stack(0)]` from the environment. If there is no such
+  // environment variable, this is a no-op. `env` is either local or
+  // global environment, depending on `i1`
+  //
+  // `i1`: If 0, use the function's local environment. If 1, use the
+  // global environment.
+  //
+  // Stack signature: `[-1]`
+  OP_CLEARENV = 11;
+
+  // Determine if `env[stack(0)]` exists. `env` is either local or global
+  // environment, depending on `i1`. Pushes boolean TRUE or FALSE.
+  //
+  // `i1`: If 0, use the function's local environment, falling back to global
+  // if the variable is unset. If 1, use the local environment with no
+  // fallback. If 2, use the global environment.
+  //
+  // Stack signature: `[-1, 1]`
+  OP_CHECKENV = 12;
+
+  // Determine if `stack(0)[stack(-1)]` exists. Pushes TRUE if so, FALSE
+  // if not.
+  //
+  // Stack signature: `[-2, 1]`
+  //
+  // Throws:
+  // * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
+  // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
+  OP_CHECKINDEX = 13;
+
+  // Computes the Boolean equivalent of the value atop the stack. If the result
+  // is equivalent to `i1`,
+  // the next instruction in the code segment is executed. If the
+  // result is not, the next instruction in the code segment is skipped.
+  //
+  // `i1`: If `i1 == 0`, the branch is taken if false. If `i1 == 1`, the branch
+  // is taken if true.
+  //
+  // Stack signature: `[-1]`
+  OP_TEST = 14;
+
+  // Jump instruction. Moves the instruction pointer to another index within the
+  // currently-executing code segment.
+  //
+  // `i1`: Position in function to jump to.
+  OP_JMP = 15;
+
+  // Calls the function at `stack(0)` with `stack(-1)` arguments ranging
+  // from `stack(-2)` to `stack(-2 - stack(-1) - 1)`. If the function
+  // returns with success, leaves the return value on the stack.
+  //
+  // Stack signature: `[-(stack(-1) + 2), 1]`
+  OP_CALL = 16;
+
+  // As `OP_CALL`, but registers this frame as an error handler.
+  OP_TRYCALL = 17;
+
+  // Return to the previous function in the call stack, with the instruction
+  // pointer advanced past `OP_CALL`. The value of `stack(0)` will be returned
+  // and pushed at the call site.
+  //
+  // Stack signature: `[]`
+  OP_RETURN = 18;
+
+  // Throw an error. `stack(0)` must be a `google.rpc.Status`. The stack is
+  // unwound until a frame with an error handler is reached, and control
+  // is returned to that frame. 
+  OP_THROW = 19;
+
+  // Execute `OP(stack(-1), stack(0))`, pushing the result.
+  //
+  // Stack signature: `[-2, 1]`
+  OP_BINOP = 20;
+
+  // Execute `OP(stack(0))`, pushing the result.
+  //
+  // Stack signature: `[-1, 1]`
+  OP_UNOP = 21;
+
+  // Create a new message. `stack(0)` must be a string containing the fully
+  // qualified Protobuf type of the message to create. `stack(-1)` is the number
+  // of key-value pairs to be used in the initial construction. `stack(-2)` thru
+  // `stack(-2 - 2*stack(-1))` is a sequence of `stack(1)` key-value pairs to
+  // be assigned as the initial value of the newly constructed message.
+  OP_NEWMESSAGE = 22;
+
+  // Create a new map. `stack(0)` is the number of entries in the map.
+  // `stack(-1)` thru
+  // `stack(-1 - 2*stack(0))` is a sequence of `stack(0)` key-value pairs
+  // to be assigned to the newly constructed map.
+  OP_NEWMAP = 23;
+
+  // Create a new list. `stack(0)` is a number indicating the length of the
+  // list. `stack(-1)` thru `stack(-1 - stack(0))` is a sequence of elements
+  // to initialize the list.
+  OP_NEWLIST = 24;
+
+  // Create a closure. `stack(0)` is a string naming the function body to be
+  // called. `stack(-1)` is either `null` or a `Map<string, value>`. If
+  // it is a map, it is treated as the captured local environment, with
+  // keys naming variables and values as the initial values.
+  OP_NEWCLOSURE = 25;
+
+  // Persist the current state, which should be a "known good" state, to the
+  // controller responsible for this workflow run.
+  // Execution is always suspended until the responsible
+  // controller confirms that the checkpoint has been persisted.
+  OP_CHECKPOINT = 26;
+
+  // Execute an action (driver-defined, usually an RPC call) leaving a
+  // `google.rpc.Status` object at the top of the stack 
+  OP_ACTION = 27;
+}
+
+// Binary operators
+enum Binop {
+  BINOP_ADD = 0;
+  BINOP_SUB = 1;
+  BINOP_MUL = 2;
+  BINOP_DIV = 3;
+  BINOP_MOD = 4;
+  BINOP_POW = 5;
+  BINOP_AND = 6;
+  BINOP_OR = 7;
+}
+
+// Unary operators
+enum Unop {
+  UNOP_MINUS = 0;
+  UNOP_NOT = 1;
+  UNOP_LEN = 2;
+}
+
+// A single instruction in a WorkflowASM program.
+message Instruction {
+  // Opcode for the instruction
+  Opcode opcode = 1;
+
+  // Integer parameter 1. Interpretation of this parameter depends on the
+  // opcode.
+  int32 i1 = 2;
+}

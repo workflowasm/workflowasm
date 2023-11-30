@@ -1,0 +1,6 @@
+/node_modules
+/packages/*/.tmp
+/packages/*/dist
+/packages/*/src/gen
+/packages/*/ts/gen
+/.tmp

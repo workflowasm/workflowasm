@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package workflowasm.net.v1;
+
+import "google/protobuf/any.proto";
+
+// Service to which Workers connect to identify themselves and join a topology.
+service WorkerTopologyService {
+  // Indicate this Worker's interest in joining the network.
+  rpc RegisterWorker(RegisterWorkerRequest) returns (RegisterWorkerResponse);
+
+  // Indicate a Worker's interest in rejoining the network. Invoked when a
+  // Worker thinks its Orchestrator has died.
+  rpc ReregisterWorker(ReregisterWorkerRequest) returns (ReregisterWorkerResponse);
+}
+
+message RegisterWorkerRequest {
+  google.protobuf.Any typed_worker_info = 1;
+}
+
+message RegisterWorkerResponse {
+  // If worker registration is successful, this key must be used by the worker
+  // when connecting via the orchestrator service.
+  string worker_connection_key = 1;
+
+  // Network host of the orchestrator the Worker should connect to.
+  string orchestrator_host = 2;
+ 
+  // Port on the orchestrator_host to connect to. 
+  string orchestrator_port = 3;
+}
+
+message ReregisterWorkerRequest {
+  /** 
+  * The original `worker_connection_key` from the initial 
+  * `RegisterWorkerResponse` received by this worker.
+  */
+  string worker_connection_key = 1;
+}
+
+message ReregisterWorkerResponse {
+
+}
