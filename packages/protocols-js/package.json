@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "clean": "rimraf src/gen dist",
-    "build": "run-s build:proto:ts build:js",
+    "build": "run-s clean build:proto:ts build:js",
     "build:js": "run-p build:cjs build:esm",
     "build:cjs": "tsc --project tsconfig.json --module commonjs --moduleResolution Node10 --outDir ./dist/cjs --declaration --declarationDir ./dist/cjs && echo >./dist/cjs/package.json '{\"type\":\"commonjs\"}'",
     "build:esm": "tsc --project tsconfig.json --verbatimModuleSyntax --outDir ./dist/esm --declaration --declarationDir ./dist/esm",

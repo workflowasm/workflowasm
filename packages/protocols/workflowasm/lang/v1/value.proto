@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package workflowasm.lang.v1;
 
+import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
+
 // A fully resolved value
 message Value {
   oneof kind {
@@ -27,22 +30,25 @@ message Value {
     bytes bytes_value = 7;
 
     // An enum value.
-    EnumValue enum_value = 9;
+    EnumValue enum_value = 8; 
 
     // The proto message backing an object value.
-    google.protobuf.Any message_value = 10;
+    google.protobuf.Any message_value = 9;
 
     // Map value.
-    MapValue map_value = 11;
+    MapValue map_value = 10;
 
     // List value.
-    ListValue list_value = 12;
+    ListValue list_value = 11;
 
     // Type value.
-    string type_value = 15;
+    string type_value = 12;
 
     // Closure value
-    ClosureValue closure_value = 16;
+    ClosureValue closure_value = 13;
+
+    // Indirect heap value
+    int32 heap_value = 14;
   }
 }
 
@@ -64,16 +70,35 @@ message ListValue {
   repeated Value values = 1;
 }
 
-message ClosureValue {
-  // Variables captured by a Closure.
-  message Captures {
-    // A map from variable identifiers to captured values.
-    map<string, Value> captures = 1;
+// A map.
+//
+// Wrapped in a message so 'not set' and empty can be differentiated, which is
+// required for use in a 'oneof'.
+message MapValue {
+  message Entry {
+    // The key.
+    //
+    // Must be unique with in the map.
+    // Currently only boolean, int, uint, and string values can be keys.
+    Value key = 1;
+
+    // The value.
+    Value value = 2;
   }
 
+  // The set of map entries.
+  //
+  // CEL has fewer restrictions on keys, so a protobuf map representation
+  // cannot be used.
+  repeated Entry entries = 1;
+}
+
+// A closure over a function.
+message ClosureValue {
   // A string identifying the code for the function that was closed over
   string function = 1;
 
-  // Variables captured by the closure.
-  Captures captures = 2;
+  // State of captured closure variables, stored by id. If empty, no variables
+  // were captured by the closure.
+  string closure_id = 2;
 }

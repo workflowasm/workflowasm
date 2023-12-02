@@ -4,11 +4,11 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
-import { Value } from "../../../cel/expr/value_pb.js";
+import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
+import { Value } from "../../lang/v1/value_pb.js";
 
 /**
- * Serialized state of a Workflowasm VM.
+ * Serialized state of a WorkflowASM VM.
  *
  * @generated from message workflowasm.vm.v1.State
  */
@@ -17,16 +17,23 @@ export class State extends Message<State> {
    * Call stack. The tail entry represents the top of the stack and therefore
    * the currently running function.
    *
-   * @generated from field: repeated workflowasm.vm.v1.State.CallStackEntry call_stack = 1;
+   * @generated from field: repeated workflowasm.vm.v1.State.ScopeEntry scope_stack = 1;
    */
-  callStack: State_CallStackEntry[] = [];
+  scopeStack: State_ScopeEntry[] = [];
 
   /**
-   * Value stack. The tail entry represents the top of the stack.
+   * Garbage-collected heap of reference cells 
    *
-   * @generated from field: repeated workflowasm.vm.v1.State.ValueStackEntry value_stack = 2;
+   * @generated from field: workflowasm.vm.v1.State.Heap heap = 2;
    */
-  valueStack: State_ValueStackEntry[] = [];
+  heap?: State_Heap;
+
+  /**
+   * Stack unwinding state
+   *
+   * @generated from field: workflowasm.vm.v1.State.UnwindState unwind_state = 3;
+   */
+  unwindState?: State_UnwindState;
 
   constructor(data?: PartialMessage<State>) {
     super();
@@ -36,8 +43,9 @@ export class State extends Message<State> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "workflowasm.vm.v1.State";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "call_stack", kind: "message", T: State_CallStackEntry, repeated: true },
-    { no: 2, name: "value_stack", kind: "message", T: State_ValueStackEntry, repeated: true },
+    { no: 1, name: "scope_stack", kind: "message", T: State_ScopeEntry, repeated: true },
+    { no: 2, name: "heap", kind: "message", T: State_Heap },
+    { no: 3, name: "unwind_state", kind: "message", T: State_UnwindState },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State {
@@ -107,91 +115,275 @@ export class State_InstructionPointer extends Message<State_InstructionPointer> 
 }
 
 /**
- * Function call stack entry, including local variable state and return
- * address
+ * An environment mapping variables to values
  *
- * @generated from message workflowasm.vm.v1.State.CallStackEntry
+ * @generated from message workflowasm.vm.v1.State.Environment
  */
-export class State_CallStackEntry extends Message<State_CallStackEntry> {
+export class State_Environment extends Message<State_Environment> {
   /**
-   * Variable values
-   *
-   * @generated from field: map<string, cel.expr.Value> vars = 1;
+   * @generated from field: map<string, workflowasm.lang.v1.Value> vars = 1;
    */
   vars: { [key: string]: Value } = {};
 
-  /**
-   * Instruction pointer
-   *
-   * @generated from field: workflowasm.vm.v1.State.InstructionPointer instruction_pointer = 2;
-   */
-  instructionPointer?: State_InstructionPointer;
-
-  constructor(data?: PartialMessage<State_CallStackEntry>) {
+  constructor(data?: PartialMessage<State_Environment>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "workflowasm.vm.v1.State.CallStackEntry";
+  static readonly typeName = "workflowasm.vm.v1.State.Environment";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "vars", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
-    { no: 2, name: "instruction_pointer", kind: "message", T: State_InstructionPointer },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_CallStackEntry {
-    return new State_CallStackEntry().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_Environment {
+    return new State_Environment().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_CallStackEntry {
-    return new State_CallStackEntry().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_Environment {
+    return new State_Environment().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_CallStackEntry {
-    return new State_CallStackEntry().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_Environment {
+    return new State_Environment().fromJsonString(jsonString, options);
   }
 
-  static equals(a: State_CallStackEntry | PlainMessage<State_CallStackEntry> | undefined, b: State_CallStackEntry | PlainMessage<State_CallStackEntry> | undefined): boolean {
-    return proto3.util.equals(State_CallStackEntry, a, b);
+  static equals(a: State_Environment | PlainMessage<State_Environment> | undefined, b: State_Environment | PlainMessage<State_Environment> | undefined): boolean {
+    return proto3.util.equals(State_Environment, a, b);
   }
 }
 
 /**
- * Value stack entry
+ * Working value stack for the vm
  *
- * @generated from message workflowasm.vm.v1.State.ValueStackEntry
+ * @generated from message workflowasm.vm.v1.State.ValueStack
  */
-export class State_ValueStackEntry extends Message<State_ValueStackEntry> {
+export class State_ValueStack extends Message<State_ValueStack> {
   /**
-   * @generated from field: cel.expr.Value value = 1;
+   * @generated from field: repeated workflowasm.lang.v1.Value values = 1;
    */
-  value?: Value;
+  values: Value[] = [];
 
-  constructor(data?: PartialMessage<State_ValueStackEntry>) {
+  constructor(data?: PartialMessage<State_ValueStack>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "workflowasm.vm.v1.State.ValueStackEntry";
+  static readonly typeName = "workflowasm.vm.v1.State.ValueStack";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "value", kind: "message", T: Value },
+    { no: 1, name: "values", kind: "message", T: Value, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_ValueStackEntry {
-    return new State_ValueStackEntry().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_ValueStack {
+    return new State_ValueStack().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_ValueStackEntry {
-    return new State_ValueStackEntry().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_ValueStack {
+    return new State_ValueStack().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_ValueStackEntry {
-    return new State_ValueStackEntry().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_ValueStack {
+    return new State_ValueStack().fromJsonString(jsonString, options);
   }
 
-  static equals(a: State_ValueStackEntry | PlainMessage<State_ValueStackEntry> | undefined, b: State_ValueStackEntry | PlainMessage<State_ValueStackEntry> | undefined): boolean {
-    return proto3.util.equals(State_ValueStackEntry, a, b);
+  static equals(a: State_ValueStack | PlainMessage<State_ValueStack> | undefined, b: State_ValueStack | PlainMessage<State_ValueStack> | undefined): boolean {
+    return proto3.util.equals(State_ValueStack, a, b);
+  }
+}
+
+/**
+ * @generated from message workflowasm.vm.v1.State.RefCell
+ */
+export class State_RefCell extends Message<State_RefCell> {
+  /**
+   * @generated from field: workflowasm.lang.v1.Value value = 1;
+   */
+  value?: Value;
+
+  /**
+   * @generated from field: int64 refcount = 2;
+   */
+  refcount = protoInt64.zero;
+
+  constructor(data?: PartialMessage<State_RefCell>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.vm.v1.State.RefCell";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value },
+    { no: 2, name: "refcount", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_RefCell {
+    return new State_RefCell().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_RefCell {
+    return new State_RefCell().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_RefCell {
+    return new State_RefCell().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: State_RefCell | PlainMessage<State_RefCell> | undefined, b: State_RefCell | PlainMessage<State_RefCell> | undefined): boolean {
+    return proto3.util.equals(State_RefCell, a, b);
+  }
+}
+
+/**
+ * @generated from message workflowasm.vm.v1.State.Heap
+ */
+export class State_Heap extends Message<State_Heap> {
+  /**
+   * @generated from field: map<int32, workflowasm.vm.v1.State.RefCell> cells = 1;
+   */
+  cells: { [key: number]: State_RefCell } = {};
+
+  constructor(data?: PartialMessage<State_Heap>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.vm.v1.State.Heap";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cells", kind: "map", K: 5 /* ScalarType.INT32 */, V: {kind: "message", T: State_RefCell} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_Heap {
+    return new State_Heap().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_Heap {
+    return new State_Heap().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_Heap {
+    return new State_Heap().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: State_Heap | PlainMessage<State_Heap> | undefined, b: State_Heap | PlainMessage<State_Heap> | undefined): boolean {
+    return proto3.util.equals(State_Heap, a, b);
+  }
+}
+
+/**
+ * Function call stack entry, including local variable state and return
+ * address
+ *
+ * @generated from message workflowasm.vm.v1.State.ScopeEntry
+ */
+export class State_ScopeEntry extends Message<State_ScopeEntry> {
+  /**
+   * Is this scope able to catch errors?
+   *
+   * @generated from field: bool isTry = 1;
+   */
+  isTry = false;
+
+  /**
+   * Is this scope a function body?
+   *
+   * @generated from field: bool isFunction = 2;
+   */
+  isFunction = false;
+
+  /**
+   * Is this scope a block scope?
+   *
+   * @generated from field: bool isBlock = 3;
+   */
+  isBlock = false;
+
+  /**
+   * Lexical environment.
+   *
+   * @generated from field: workflowasm.vm.v1.State.Environment environment = 4;
+   */
+  environment?: State_Environment;
+
+  /**
+   * Value stack for function call scopes.
+   *
+   * @generated from field: workflowasm.vm.v1.State.ValueStack stack = 5;
+   */
+  stack?: State_ValueStack;
+
+  /**
+   * Currently running instruction for function call scopes.
+   *
+   * @generated from field: workflowasm.vm.v1.State.InstructionPointer instruction_pointer = 6;
+   */
+  instructionPointer?: State_InstructionPointer;
+
+  constructor(data?: PartialMessage<State_ScopeEntry>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.vm.v1.State.ScopeEntry";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "isTry", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "isFunction", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "isBlock", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "environment", kind: "message", T: State_Environment },
+    { no: 5, name: "stack", kind: "message", T: State_ValueStack },
+    { no: 6, name: "instruction_pointer", kind: "message", T: State_InstructionPointer },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_ScopeEntry {
+    return new State_ScopeEntry().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_ScopeEntry {
+    return new State_ScopeEntry().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_ScopeEntry {
+    return new State_ScopeEntry().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: State_ScopeEntry | PlainMessage<State_ScopeEntry> | undefined, b: State_ScopeEntry | PlainMessage<State_ScopeEntry> | undefined): boolean {
+    return proto3.util.equals(State_ScopeEntry, a, b);
+  }
+}
+
+/**
+ * State related to stack unwinding.
+ *
+ * @generated from message workflowasm.vm.v1.State.UnwindState
+ */
+export class State_UnwindState extends Message<State_UnwindState> {
+  constructor(data?: PartialMessage<State_UnwindState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.vm.v1.State.UnwindState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): State_UnwindState {
+    return new State_UnwindState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): State_UnwindState {
+    return new State_UnwindState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): State_UnwindState {
+    return new State_UnwindState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: State_UnwindState | PlainMessage<State_UnwindState> | undefined, b: State_UnwindState | PlainMessage<State_UnwindState> | undefined): boolean {
+    return proto3.util.equals(State_UnwindState, a, b);
   }
 }
 

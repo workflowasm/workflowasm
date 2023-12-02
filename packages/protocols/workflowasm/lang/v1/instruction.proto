@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package workflowasm.lang.v1;
 
-import "cel/expr/syntax.proto";
-
 // Opcodes for WorkflowASM instructions.
 enum Opcode {
   // No-op instruction. Execution proceeds without any effect.
@@ -137,11 +135,12 @@ enum Opcode {
 
   // Computes the Boolean equivalent of the value atop the stack. If the result
   // is equivalent to `i1`,
-  // the next instruction in the code segment is executed. If the
-  // result is not, the next instruction in the code segment is skipped.
+  // the next instruction in the code segment is skipped. If the
+  // result is not, the next instruction in the code segment is executed.
+  // The next instruction is expected to be a JMP to an "else" branch.
   //
-  // `i1`: If `i1 == 0`, the branch is taken if false. If `i1 == 1`, the branch
-  // is taken if true.
+  // `i1`: If `i1 == 0`, the branch is taken if true. If `i1 != 0`, the branch
+  // is taken if false.
   //
   // Stack signature: `[-1]`
   OP_TEST = 14;
@@ -156,17 +155,18 @@ enum Opcode {
   // from `stack(-2)` to `stack(-2 - stack(-1) - 1)`. If the function
   // returns with success, leaves the return value on the stack.
   //
-  // Stack signature: `[-(stack(-1) + 2), 1]`
+  // `i1`: If `i1 == 1`, this call is treated as a `try`. `result` and `error`
+  // are pushed to the stack, with `error` being `null` if there was no error.
+  // and `result` being `null` if an error was caught.
+  //
+  // Stack signature: `[-(stack(-1) + 2), (i1 == 1) ? 2 : 1]`
   OP_CALL = 16;
-
-  // As `OP_CALL`, but registers this frame as an error handler.
-  OP_TRYCALL = 17;
 
   // Return to the previous function in the call stack, with the instruction
   // pointer advanced past `OP_CALL`. The value of `stack(0)` will be returned
-  // and pushed at the call site.
+  // and pushed at the call site as a successful result.
   //
-  // Stack signature: `[]`
+  // Stack signature: `[-1]`
   OP_RETURN = 18;
 
   // Throw an error. `stack(0)` must be a `google.rpc.Status`. The stack is
@@ -174,7 +174,7 @@ enum Opcode {
   // is returned to that frame. 
   OP_THROW = 19;
 
-  // Execute `OP(stack(-1), stack(0))`, pushing the result.
+  // Execute `OP(stack(0), stack(-1))`, pushing the result.
   //
   // Stack signature: `[-2, 1]`
   OP_BINOP = 20;

@@ -5,7 +5,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "run-p build:proto:bin build:proto:json",
+    "clean": "rimraf dist && mkdir dist",
+    "build": "run-s clean build:proto",
+    "build:proto": "run-p build:proto:bin build:proto:json",
     "build:proto:bin": "buf build -o dist/protocols.binpb.gz",
     "build:proto:json": "run-s build:proto:json:build build:proto:json:strip",
     "build:proto:json:build": "buf build --as-file-descriptor-set -o dist/protocols.fds.json",

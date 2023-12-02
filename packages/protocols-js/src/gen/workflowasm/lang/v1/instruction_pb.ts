@@ -20,13 +20,33 @@ export enum Opcode {
   OP_NOOP = 0,
 
   /**
-   * Halt instruction. Terminates execution immediately. HALT
-   * may return a Status and a Result to the runtime, which in the best case
-   * will be recorded by the controller as the result of the run.
+   * Push `null` to the stack.
    *
-   * @generated from enum value: OP_HALT = 1;
+   * Stack signature: `[1]`
+   *
+   * @generated from enum value: OP_PUSHNULL = 1;
    */
-  OP_HALT = 1,
+  OP_PUSHNULL = 1,
+
+  /**
+   * Push the constant integer value given by `i1` to the stack.
+   *
+   * `i1`: The literal constant to push.
+   *
+   * Stack signature: `[1]`
+   *
+   * @generated from enum value: OP_PUSHINT = 2;
+   */
+  OP_PUSHINT = 2,
+
+  /**
+   * Push the depth of the stack (as an integer) to the stack.
+   *
+   * Stack signature: `[1]`
+   *
+   * @generated from enum value: OP_PUSHDEPTH = 3;
+   */
+  OP_PUSHDEPTH = 3,
 
   /**
    * Push a value from the function's constant table to the top of the
@@ -34,111 +54,269 @@ export enum Opcode {
    *
    * `i1`: Index into the constant table of the constant to push.
    *
-   * @generated from enum value: OP_PUSHK = 2;
+   * Stack signature: `[1]`
+   *
+   * Throws:
+   * * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in
+   * the constant table.
+   *
+   * @generated from enum value: OP_PUSHK = 4;
    */
-  OP_PUSHK = 2,
+  OP_PUSHK = 4,
 
   /**
-   * Push the result of evaluating a CEL expression from the function's
-   * expr table to the top of the value stack.
+   * Compute `stack(0)[stack(-1)]` and push its value.
    *
-   * `i1`: Index into the expression table of the expression to evaluate.
+   * Stack signature: `[-2, 1]`
    *
-   * @generated from enum value: OP_PUSHX = 3;
+   * Throws:
+   * * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
+   * * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in `stack(0)`
+   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
+   *
+   * @generated from enum value: OP_PUSHINDEX = 5;
    */
-  OP_PUSHX = 3,
+  OP_PUSHINDEX = 5,
 
   /**
-   * Push a state variable at the given callstack level to the top of the
-   * value stack.
+   * Compute `env[stack(0)]` and push its value. `env` is either the
+   * local or global environment depending on `i1`.
    *
-   * `i1`: Index of the callstack level to access.
-   * `name`: Name of the variable whose value to push.
+   * `i1`: If 0, use the function's local environment, falling back to global
+   * if the variable is unset. If 1, use the local environment with no
+   * fallback. If 2, use the global environment.
    *
-   * @generated from enum value: OP_PUSHV = 4;
+   * Stack signature: `[-1, 1]`
+   *
+   * Throws:
+   * * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in `env`
+   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 1`
+   *
+   * @generated from enum value: OP_PUSHENV = 6;
    */
-  OP_PUSHV = 4,
+  OP_PUSHENV = 6,
+
+  /**
+   * Duplicate the value at `stack(i1)` and push it. For non-primitive values,
+   * this is a deep duplication. Nothing is removed from the stack.
+   *
+   * `i1`: Stack index to duplicate.
+   *
+   * Stack signature: `[1]`
+   *
+   * Throws:
+   * * `google.rpc.Code.INVALID_ARGUMENT` if the value cannot be duplicated.
+   * * `google.rpc.Code.FAILED_PRECONDITION` if `i1` is an invalid stack index.
+   *
+   * @generated from enum value: OP_DUP = 7;
+   */
+  OP_DUP = 7,
 
   /**
    * Pop `i1` values from the top of the stack, discarding them
    *
-   * `i1`: Number of values to pop.
+   * `i1`: Number of values to pop. If `0` is given, 1 value will still be
+   * popped.
    *
-   * @generated from enum value: OP_POP = 5;
+   * Stack signature: `[-i1]`
+   *
+   * Throws:
+   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < i1`
+   *
+   * @generated from enum value: OP_POP = 8;
    */
-  OP_POP = 5,
+  OP_POP = 8,
 
   /**
-   * Sets the named state variable at the given callstack level to a value
-   * from the value stack.
+   * Roll the top `i1` values on the stack. Effectively, moves the object
+   * at `stack(-i1 + 1)` to the top of the stack.
    *
-   * `i1`: Position on value stack of value to be set
-   * `i2`: Level of call stack to set
-   * `name`: Name of variable to set
+   * `i1`: Number of stack entries to roll.
    *
-   * @generated from enum value: OP_SET = 6;
+   * Stack signature: `[]`
+   *
+   * Throws:
+   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < i1`
+   *
+   * @generated from enum value: OP_ROLL = 9;
    */
-  OP_SET = 6,
+  OP_ROLL = 9,
 
   /**
-   * Removes the named state variable at the given callstack level from
-   * the state.
+   * Perform `env[stack(-1)] = stack(0)`. `env` is either the local or
+   * global environment depending on `i1`
    *
-   * `i1`: Ignored
-   * `i2`: Level of call stack to clear
-   * `name`: Name of variable to clear
+   * `i1`: If 0, use the function's local environment. If 1, use the
+   * global environment.
    *
-   * @generated from enum value: OP_CLEAR = 7;
+   * Stack signature: `[-2]`
+   *
+   * @generated from enum value: OP_SETENV = 10;
    */
-  OP_CLEAR = 7,
+  OP_SETENV = 10,
 
   /**
-   * Computes the Boolean equivalent of the value at `i1`. If the result
-   * is TRUE, the next instruction in the code segment is executed. If the
-   * result is FALSE, the next instruction in the code segment is skipped.
+   * Remove `env[stack(0)]` from the environment. If there is no such
+   * environment variable, this is a no-op. `env` is either local or
+   * global environment, depending on `i1`
    *
-   * `i1`: Stack position of value to examine
-   * `i2`: Flags. If flags = 0, proceed as above. If flags != 0, the Boolean
-   * condition is negated.
+   * `i1`: If 0, use the function's local environment. If 1, use the
+   * global environment.
    *
-   * @generated from enum value: OP_IF = 8;
+   * Stack signature: `[-1]`
+   *
+   * @generated from enum value: OP_CLEARENV = 11;
    */
-  OP_IF = 8,
+  OP_CLEARENV = 11,
+
+  /**
+   * Determine if `env[stack(0)]` exists. `env` is either local or global
+   * environment, depending on `i1`. Pushes boolean TRUE or FALSE.
+   *
+   * `i1`: If 0, use the function's local environment, falling back to global
+   * if the variable is unset. If 1, use the local environment with no
+   * fallback. If 2, use the global environment.
+   *
+   * Stack signature: `[-1, 1]`
+   *
+   * @generated from enum value: OP_CHECKENV = 12;
+   */
+  OP_CHECKENV = 12,
+
+  /**
+   * Determine if `stack(0)[stack(-1)]` exists. Pushes TRUE if so, FALSE
+   * if not.
+   *
+   * Stack signature: `[-2, 1]`
+   *
+   * Throws:
+   * * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
+   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
+   *
+   * @generated from enum value: OP_CHECKINDEX = 13;
+   */
+  OP_CHECKINDEX = 13,
+
+  /**
+   * Computes the Boolean equivalent of the value atop the stack. If the result
+   * is equivalent to `i1`,
+   * the next instruction in the code segment is executed. If the
+   * result is not, the next instruction in the code segment is skipped.
+   *
+   * `i1`: If `i1 == 0`, the branch is taken if false. If `i1 == 1`, the branch
+   * is taken if true.
+   *
+   * Stack signature: `[-1]`
+   *
+   * @generated from enum value: OP_TEST = 14;
+   */
+  OP_TEST = 14,
 
   /**
    * Jump instruction. Moves the instruction pointer to another index within the
    * currently-executing code segment.
    *
-   * `i1`: Stack position of a numerical value for where to jump.
-   * `i2`: Flags. If flags = 0, the jump is absolute. If flags != 0, the jump
-   * is measured relative to the current instruction pointer.
+   * `i1`: Position in function to jump to.
    *
-   * Error conditions:
-   *  Expression doesn't evaluate to an integer:
-   *  Integer is out of bounds of code segment:
-   *
-   * @generated from enum value: OP_JMP = 9;
+   * @generated from enum value: OP_JMP = 15;
    */
-  OP_JMP = 9,
+  OP_JMP = 15,
 
   /**
-   * Store the current instruction pointer on the call stack, then jump to the
-   * entry point of another named function.
+   * Calls the function at `stack(0)` with `stack(-1)` arguments ranging
+   * from `stack(-2)` to `stack(-2 - stack(-1) - 1)`. If the function
+   * returns with success, leaves the return value on the stack.
    *
-   * `i1`: Count of values on the value stack, measured from the top, for
-   * arguments to pass to the function.
-   * `name`: Name of function to call.
+   * Stack signature: `[-(stack(-1) + 2), 1]`
    *
-   * @generated from enum value: OP_CALL = 10;
+   * @generated from enum value: OP_CALL = 16;
    */
-  OP_CALL = 10,
+  OP_CALL = 16,
 
   /**
-   * Return to the function/instruction atop the call stack
+   * As `OP_CALL`, but registers this frame as an error handler.
    *
-   * @generated from enum value: OP_RETURN = 11;
+   * @generated from enum value: OP_TRYCALL = 17;
    */
-  OP_RETURN = 11,
+  OP_TRYCALL = 17,
+
+  /**
+   * Return to the previous function in the call stack, with the instruction
+   * pointer advanced past `OP_CALL`. The value of `stack(0)` will be returned
+   * and pushed at the call site.
+   *
+   * Stack signature: `[]`
+   *
+   * @generated from enum value: OP_RETURN = 18;
+   */
+  OP_RETURN = 18,
+
+  /**
+   * Throw an error. `stack(0)` must be a `google.rpc.Status`. The stack is
+   * unwound until a frame with an error handler is reached, and control
+   * is returned to that frame. 
+   *
+   * @generated from enum value: OP_THROW = 19;
+   */
+  OP_THROW = 19,
+
+  /**
+   * Execute `OP(stack(-1), stack(0))`, pushing the result.
+   *
+   * Stack signature: `[-2, 1]`
+   *
+   * @generated from enum value: OP_BINOP = 20;
+   */
+  OP_BINOP = 20,
+
+  /**
+   * Execute `OP(stack(0))`, pushing the result.
+   *
+   * Stack signature: `[-1, 1]`
+   *
+   * @generated from enum value: OP_UNOP = 21;
+   */
+  OP_UNOP = 21,
+
+  /**
+   * Create a new message. `stack(0)` must be a string containing the fully
+   * qualified Protobuf type of the message to create. `stack(-1)` is the number
+   * of key-value pairs to be used in the initial construction. `stack(-2)` thru
+   * `stack(-2 - 2*stack(-1))` is a sequence of `stack(1)` key-value pairs to
+   * be assigned as the initial value of the newly constructed message.
+   *
+   * @generated from enum value: OP_NEWMESSAGE = 22;
+   */
+  OP_NEWMESSAGE = 22,
+
+  /**
+   * Create a new map. `stack(0)` is the number of entries in the map.
+   * `stack(-1)` thru
+   * `stack(-1 - 2*stack(0))` is a sequence of `stack(0)` key-value pairs
+   * to be assigned to the newly constructed map.
+   *
+   * @generated from enum value: OP_NEWMAP = 23;
+   */
+  OP_NEWMAP = 23,
+
+  /**
+   * Create a new list. `stack(0)` is a number indicating the length of the
+   * list. `stack(-1)` thru `stack(-1 - stack(0))` is a sequence of elements
+   * to initialize the list.
+   *
+   * @generated from enum value: OP_NEWLIST = 24;
+   */
+  OP_NEWLIST = 24,
+
+  /**
+   * Create a closure. `stack(0)` is a string naming the function body to be
+   * called. `stack(-1)` is either `null` or a `Map<string, value>`. If
+   * it is a map, it is treated as the captured local environment, with
+   * keys naming variables and values as the initial values.
+   *
+   * @generated from enum value: OP_NEWCLOSURE = 25;
+   */
+  OP_NEWCLOSURE = 25,
 
   /**
    * Persist the current state, which should be a "known good" state, to the
@@ -146,34 +324,134 @@ export enum Opcode {
    * Execution is always suspended until the responsible
    * controller confirms that the checkpoint has been persisted.
    *
-   * @generated from enum value: OP_CHECKPOINT = 12;
+   * @generated from enum value: OP_CHECKPOINT = 26;
    */
-  OP_CHECKPOINT = 12,
+  OP_CHECKPOINT = 26,
 
   /**
    * Execute an action (driver-defined, usually an RPC call) leaving a
    * `google.rpc.Status` object at the top of the stack 
    *
-   * @generated from enum value: OP_ACTION = 13;
+   * @generated from enum value: OP_ACTION = 27;
    */
-  OP_ACTION = 13,
+  OP_ACTION = 27,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Opcode)
 proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
   { no: 0, name: "OP_NOOP" },
-  { no: 1, name: "OP_HALT" },
-  { no: 2, name: "OP_PUSHK" },
-  { no: 3, name: "OP_PUSHX" },
-  { no: 4, name: "OP_PUSHV" },
-  { no: 5, name: "OP_POP" },
-  { no: 6, name: "OP_SET" },
-  { no: 7, name: "OP_CLEAR" },
-  { no: 8, name: "OP_IF" },
-  { no: 9, name: "OP_JMP" },
-  { no: 10, name: "OP_CALL" },
-  { no: 11, name: "OP_RETURN" },
-  { no: 12, name: "OP_CHECKPOINT" },
-  { no: 13, name: "OP_ACTION" },
+  { no: 1, name: "OP_PUSHNULL" },
+  { no: 2, name: "OP_PUSHINT" },
+  { no: 3, name: "OP_PUSHDEPTH" },
+  { no: 4, name: "OP_PUSHK" },
+  { no: 5, name: "OP_PUSHINDEX" },
+  { no: 6, name: "OP_PUSHENV" },
+  { no: 7, name: "OP_DUP" },
+  { no: 8, name: "OP_POP" },
+  { no: 9, name: "OP_ROLL" },
+  { no: 10, name: "OP_SETENV" },
+  { no: 11, name: "OP_CLEARENV" },
+  { no: 12, name: "OP_CHECKENV" },
+  { no: 13, name: "OP_CHECKINDEX" },
+  { no: 14, name: "OP_TEST" },
+  { no: 15, name: "OP_JMP" },
+  { no: 16, name: "OP_CALL" },
+  { no: 17, name: "OP_TRYCALL" },
+  { no: 18, name: "OP_RETURN" },
+  { no: 19, name: "OP_THROW" },
+  { no: 20, name: "OP_BINOP" },
+  { no: 21, name: "OP_UNOP" },
+  { no: 22, name: "OP_NEWMESSAGE" },
+  { no: 23, name: "OP_NEWMAP" },
+  { no: 24, name: "OP_NEWLIST" },
+  { no: 25, name: "OP_NEWCLOSURE" },
+  { no: 26, name: "OP_CHECKPOINT" },
+  { no: 27, name: "OP_ACTION" },
+]);
+
+/**
+ * Binary operators
+ *
+ * @generated from enum workflowasm.lang.v1.Binop
+ */
+export enum Binop {
+  /**
+   * @generated from enum value: BINOP_ADD = 0;
+   */
+  ADD = 0,
+
+  /**
+   * @generated from enum value: BINOP_SUB = 1;
+   */
+  SUB = 1,
+
+  /**
+   * @generated from enum value: BINOP_MUL = 2;
+   */
+  MUL = 2,
+
+  /**
+   * @generated from enum value: BINOP_DIV = 3;
+   */
+  DIV = 3,
+
+  /**
+   * @generated from enum value: BINOP_MOD = 4;
+   */
+  MOD = 4,
+
+  /**
+   * @generated from enum value: BINOP_POW = 5;
+   */
+  POW = 5,
+
+  /**
+   * @generated from enum value: BINOP_AND = 6;
+   */
+  AND = 6,
+
+  /**
+   * @generated from enum value: BINOP_OR = 7;
+   */
+  OR = 7,
+}
+// Retrieve enum metadata with: proto3.getEnumType(Binop)
+proto3.util.setEnumType(Binop, "workflowasm.lang.v1.Binop", [
+  { no: 0, name: "BINOP_ADD" },
+  { no: 1, name: "BINOP_SUB" },
+  { no: 2, name: "BINOP_MUL" },
+  { no: 3, name: "BINOP_DIV" },
+  { no: 4, name: "BINOP_MOD" },
+  { no: 5, name: "BINOP_POW" },
+  { no: 6, name: "BINOP_AND" },
+  { no: 7, name: "BINOP_OR" },
+]);
+
+/**
+ * Unary operators
+ *
+ * @generated from enum workflowasm.lang.v1.Unop
+ */
+export enum Unop {
+  /**
+   * @generated from enum value: UNOP_MINUS = 0;
+   */
+  MINUS = 0,
+
+  /**
+   * @generated from enum value: UNOP_NOT = 1;
+   */
+  NOT = 1,
+
+  /**
+   * @generated from enum value: UNOP_LEN = 2;
+   */
+  LEN = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(Unop)
+proto3.util.setEnumType(Unop, "workflowasm.lang.v1.Unop", [
+  { no: 0, name: "UNOP_MINUS" },
+  { no: 1, name: "UNOP_NOT" },
+  { no: 2, name: "UNOP_LEN" },
 ]);
 
 /**
@@ -197,22 +475,6 @@ export class Instruction extends Message<Instruction> {
    */
   i1 = 0;
 
-  /**
-   * Integer parameter 2. Interpretation of this parameter depends on the
-   * opcode.
-   *
-   * @generated from field: int32 i2 = 3;
-   */
-  i2 = 0;
-
-  /**
-   * For opcodes that act on named objects, the name of the object
-   * to act on.
-   *
-   * @generated from field: string name = 4;
-   */
-  name = "";
-
   constructor(data?: PartialMessage<Instruction>) {
     super();
     proto3.util.initPartial(data, this);
@@ -223,8 +485,6 @@ export class Instruction extends Message<Instruction> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "opcode", kind: "enum", T: proto3.getEnumType(Opcode) },
     { no: 2, name: "i1", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "i2", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instruction {

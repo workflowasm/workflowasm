@@ -15,25 +15,57 @@ message State {
     int32 instruction_index = 2;
   }
 
-  // Value stack entry
-  message ValueStackEntry {
-      value = 1;
+  // An environment mapping variables to values
+  message Environment {
+    map<string, workflowasm.lang.v1.Value> vars = 1;
+  }
+
+  // Working value stack for the vm
+  message ValueStack {
+    repeated workflowasm.lang.v1.Value values = 1;
+  }
+
+  message RefCell {
+    workflowasm.lang.v1.Value value = 1;
+    int64 refcount = 2;
+  }
+
+  message Heap {
+    map<int32, RefCell> cells = 1;
   }
 
   // Function call stack entry, including local variable state and return
   // address
-  message CallStackEntry {
-    // Variable values
-    map<string, workflowasm.lang.v1.Value> vars = 1;
-     
-    // Instruction pointer
-    InstructionPointer instruction_pointer = 2;
+  message ScopeEntry {
+    // Is this scope able to catch errors?
+    bool isTry = 1;
+
+    // Is this scope a function body?
+    bool isFunction = 2;
+
+    // Is this scope a block scope?
+    bool isBlock = 3;
+
+    // Lexical environment.
+    Environment environment = 4;
+
+    // Value stack for function call scopes.
+    ValueStack stack = 5;
+
+    // Currently running instruction for function call scopes.
+    InstructionPointer instruction_pointer = 6;
   }
+
+  // State related to stack unwinding.
+  message UnwindState {}
 
   // Call stack. The tail entry represents the top of the stack and therefore
   // the currently running function.
-  repeated CallStackEntry call_stack = 1;
+  repeated ScopeEntry scope_stack = 1;
 
-  // Value stack. The tail entry represents the top of the stack.
-  repeated ValueStackEntry value_stack = 2;
+  // Garbage-collected heap of reference cells 
+  Heap heap = 2;
+
+  // Stack unwinding state
+  UnwindState unwind_state = 3;
 }

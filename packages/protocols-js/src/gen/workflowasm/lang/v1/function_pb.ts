@@ -7,7 +7,6 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { Instruction } from "./instruction_pb.js";
 import { Value } from "./value_pb.js";
-import { Expression } from "./expression_pb.js";
 
 /**
  * A single function segment in an assembly
@@ -29,13 +28,6 @@ export class Function extends Message<Function> {
    */
   constants: Value[] = [];
 
-  /**
-   * The function's expression table, used with `OP_PUSHX`
-   *
-   * @generated from field: repeated workflowasm.lang.v1.Expression expressions = 3;
-   */
-  expressions: Expression[] = [];
-
   constructor(data?: PartialMessage<Function>) {
     super();
     proto3.util.initPartial(data, this);
@@ -46,7 +38,6 @@ export class Function extends Message<Function> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instructions", kind: "message", T: Instruction, repeated: true },
     { no: 2, name: "constants", kind: "message", T: Value, repeated: true },
-    { no: 3, name: "expressions", kind: "message", T: Expression, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Function {

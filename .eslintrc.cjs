@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const { readdirSync, existsSync } = require("fs");
-const { join } = require("path");
+const { readdirSync, existsSync } = require("fs")
+const { join } = require("path")
 
 module.exports = {
   env: {
     browser: true,
     es2021: true,
-    node: true,
+    node: true
   },
   ignorePatterns: [
     "packages/typescript-compat/*/dist/**",
     "packages/*/dist/**",
     "packages/*/.tmp/**",
-    "node_modules/**",
+    "node_modules/**"
   ],
   plugins: ["@typescript-eslint", "n", "import"],
   // Rules and settings that do not require a non-default parser
@@ -33,6 +33,7 @@ module.exports = {
   rules: {
     "no-console": "error",
     "import/no-duplicates": "off",
+    eqeqeq: ["error", "smart"]
   },
   settings: {},
   overrides: [
@@ -46,20 +47,20 @@ module.exports = {
           parser: "@typescript-eslint/parser",
           parserOptions: {
             project: "./tsconfig.json",
-            tsconfigRootDir: dir,
+            tsconfigRootDir: dir
           },
           settings: {
             "import/resolver": {
               typescript: {
-                project: "packages/*/tsconfig.json",
-              },
-            },
+                project: "packages/*/tsconfig.json"
+              }
+            }
           },
           extends: [
             "plugin:@typescript-eslint/recommended",
             "plugin:@typescript-eslint/recommended-requiring-type-checking",
             "plugin:import/recommended",
-            "plugin:import/typescript",
+            "plugin:import/typescript"
           ],
           rules: {
             "@typescript-eslint/strict-boolean-expressions": "error",
@@ -71,16 +72,20 @@ module.exports = {
               "error",
             "@typescript-eslint/no-invalid-void-type": "error",
             "@typescript-eslint/no-base-to-string": "error",
+            "@typescript-eslint/no-unused-vars": [
+              "error",
+              { args: "after-used", argsIgnorePattern: "^_" }
+            ],
             "import/no-cycle": "error",
-            "import/no-duplicates": "off",
-          },
-        };
+            "import/no-duplicates": "off"
+          }
+        }
       }),
     // For scripts and configurations, use Node.js rules
     {
       files: ["**/*.{js,mjs,cjs}"],
       parserOptions: {
-        ecmaVersion: 13, // ES2022 - https://eslint.org/docs/latest/use/configure/language-options#specifying-environments
+        ecmaVersion: 13 // ES2022 - https://eslint.org/docs/latest/use/configure/language-options#specifying-environments
       },
       extends: ["eslint:recommended", "plugin:n/recommended"],
       rules: {
@@ -96,8 +101,8 @@ module.exports = {
         "n/prefer-promises/dns": "error",
         "n/prefer-promises/fs": "error",
         "n/no-unsupported-features/node-builtins": "error",
-        "n/no-unsupported-features/es-syntax": "error",
-      },
-    },
-  ],
-};
+        "n/no-unsupported-features/es-syntax": "error"
+      }
+    }
+  ]
+}
