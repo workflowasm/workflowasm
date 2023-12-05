@@ -7,6 +7,139 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Any, Message, NullValue, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * Short integral codes for the WorkflowASM value types.
+ *
+ * NB: These must match exactly with the
+ * `oneof` field numbers in the `workflowasm.lang.v1.Value` message
+ * type. (Except for `TYPE_UNKNOWN` which has no corresponding values)
+ *
+ * @generated from enum workflowasm.lang.v1.Type
+ */
+export enum Type {
+  /**
+   * @generated from enum value: TYPE_UNKNOWN = 0;
+   */
+  UNKNOWN = 0,
+
+  /**
+   * @generated from enum value: TYPE_NULL = 1;
+   */
+  NULL = 1,
+
+  /**
+   * @generated from enum value: TYPE_BOOL = 2;
+   */
+  BOOL = 2,
+
+  /**
+   * @generated from enum value: TYPE_INT64 = 3;
+   */
+  INT64 = 3,
+
+  /**
+   * @generated from enum value: TYPE_UINT64 = 4;
+   */
+  UINT64 = 4,
+
+  /**
+   * @generated from enum value: TYPE_DOUBLE = 5;
+   */
+  DOUBLE = 5,
+
+  /**
+   * @generated from enum value: TYPE_STRING = 6;
+   */
+  STRING = 6,
+
+  /**
+   * @generated from enum value: TYPE_BYTES = 7;
+   */
+  BYTES = 7,
+
+  /**
+   * @generated from enum value: TYPE_ENUM = 8;
+   */
+  ENUM = 8,
+
+  /**
+   * @generated from enum value: TYPE_OBJECT = 9;
+   */
+  OBJECT = 9,
+
+  /**
+   * @generated from enum value: TYPE_MAP = 10;
+   */
+  MAP = 10,
+
+  /**
+   * @generated from enum value: TYPE_LIST = 11;
+   */
+  LIST = 11,
+
+  /**
+   * @generated from enum value: TYPE_TYPE = 12;
+   */
+  TYPE = 12,
+
+  /**
+   * @generated from enum value: TYPE_CALLABLE = 13;
+   */
+  CALLABLE = 13,
+}
+// Retrieve enum metadata with: proto3.getEnumType(Type)
+proto3.util.setEnumType(Type, "workflowasm.lang.v1.Type", [
+  { no: 0, name: "TYPE_UNKNOWN" },
+  { no: 1, name: "TYPE_NULL" },
+  { no: 2, name: "TYPE_BOOL" },
+  { no: 3, name: "TYPE_INT64" },
+  { no: 4, name: "TYPE_UINT64" },
+  { no: 5, name: "TYPE_DOUBLE" },
+  { no: 6, name: "TYPE_STRING" },
+  { no: 7, name: "TYPE_BYTES" },
+  { no: 8, name: "TYPE_ENUM" },
+  { no: 9, name: "TYPE_OBJECT" },
+  { no: 10, name: "TYPE_MAP" },
+  { no: 11, name: "TYPE_LIST" },
+  { no: 12, name: "TYPE_TYPE" },
+  { no: 13, name: "TYPE_CALLABLE" },
+]);
+
+/**
+ * Short integral codes for the species of callables that can be stored
+ * as values within the VM.
+ *
+ * @generated from enum workflowasm.lang.v1.CallableType
+ */
+export enum CallableType {
+  /**
+   * @generated from enum value: CALLABLE_TYPE_UNKNOWN = 0;
+   */
+  UNKNOWN = 0,
+
+  /**
+   * @generated from enum value: CALLABLE_TYPE_NATIVE = 1;
+   */
+  NATIVE = 1,
+
+  /**
+   * @generated from enum value: CALLABLE_TYPE_FUNCTION = 2;
+   */
+  FUNCTION = 2,
+
+  /**
+   * @generated from enum value: CALLABLE_TYPE_CLOSURE = 3;
+   */
+  CLOSURE = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(CallableType)
+proto3.util.setEnumType(CallableType, "workflowasm.lang.v1.CallableType", [
+  { no: 0, name: "CALLABLE_TYPE_UNKNOWN" },
+  { no: 1, name: "CALLABLE_TYPE_NATIVE" },
+  { no: 2, name: "CALLABLE_TYPE_FUNCTION" },
+  { no: 3, name: "CALLABLE_TYPE_CLOSURE" },
+]);
+
+/**
  * A fully resolved value
  *
  * @generated from message workflowasm.lang.v1.Value

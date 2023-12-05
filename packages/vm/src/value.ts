@@ -1,22 +1,7 @@
 import { Message } from "@bufbuild/protobuf"
+import { Type, CallableType, Binop, Unop } from "@workflowasm/protocols-js"
 
-export enum TypeTag {
-  TYPE_UNDEFINED = 0,
-  TYPE_NULL = 1,
-  TYPE_BOOLEAN = 2,
-  TYPE_INT64 = 3,
-  TYPE_UINT64 = 4,
-  TYPE_DOUBLE = 5,
-  TYPE_STRING = 6,
-  TYPE_BYTES = 7,
-  TYPE_ENUM = 8,
-  TYPE_OBJECT = 9,
-  TYPE_MAP = 10,
-  TYPE_LIST = 11,
-  TYPE_TYPE = 12,
-  TYPE_CLOSURE = 13,
-  TYPE_REF = 14
-}
+export { Type, CallableType, Binop, Unop }
 
 export type EnumValue = [type: string, value: number]
 
@@ -24,38 +9,55 @@ export type ObjectValue = Message
 
 export type MapKey = bigint | string | boolean
 
-export type MapValue = Map<MapKey, TaggedValue>
+export type MapValue = Map<MapKey, AnyValue>
 
-export type ListValue = TaggedValue[]
+export type ListValue = AnyValue[]
 
 export type RefValue = number
 
-export type ClosureValue = [
-  function: string,
-  boundArgs: TaggedValue[] | undefined,
+export type NativeCallable = { type: CallableType.NATIVE; id: string }
+
+export type FunctionCallable = { type: CallableType.FUNCTION; id: string }
+
+export type ClosureCallable = {
+  type: CallableType.CLOSURE
+  id: string
+  boundArgs: AnyValue[] | undefined
   upvalues: Map<string, RefValue> | undefined
-]
+}
 
-export type TaggedValue =
-  | [TypeTag.TYPE_UNDEFINED, undefined]
-  | [TypeTag.TYPE_NULL, null]
-  | [TypeTag.TYPE_BOOLEAN, boolean]
-  | [TypeTag.TYPE_INT64, bigint]
-  | [TypeTag.TYPE_UINT64, bigint]
-  | [TypeTag.TYPE_DOUBLE, number]
-  | [TypeTag.TYPE_STRING, string]
-  | [TypeTag.TYPE_BYTES, Uint8Array]
-  | [TypeTag.TYPE_ENUM, EnumValue]
-  | [TypeTag.TYPE_OBJECT, ObjectValue]
-  | [TypeTag.TYPE_MAP, MapValue]
-  | [TypeTag.TYPE_LIST, ListValue]
-  | [TypeTag.TYPE_TYPE, string]
-  | [TypeTag.TYPE_CLOSURE, ClosureValue]
-  | [TypeTag.TYPE_REF, RefValue]
+export type CallableValue = NativeCallable | FunctionCallable | ClosureCallable
 
-export const Null: TaggedValue = [TypeTag.TYPE_NULL, null]
+export type AnyValue =
+  | [Type.NULL, null]
+  | [Type.BOOL, boolean]
+  | [Type.INT64, bigint]
+  | [Type.UINT64, bigint]
+  | [Type.DOUBLE, number]
+  | [Type.STRING, string]
+  | [Type.BYTES, Uint8Array]
+  | [Type.ENUM, EnumValue]
+  | [Type.OBJECT, ObjectValue]
+  | [Type.MAP, MapValue]
+  | [Type.LIST, ListValue]
+  | [Type.TYPE, string]
+  | [Type.CALLABLE, CallableValue]
 
-export type RefCell = [value: TaggedValue, refCount: number]
+export const Null: AnyValue = [Type.NULL, null]
+
+/**
+ * When a native operation needs to return a result to the VM, this is the
+ * type signature.
+ *
+ * Native operations **MUST NOT** throw JS exceptions into the VM's call stack
+ * as this constitutes non-serializable information. Instead, return an error
+ * result here.
+ */
+export type NativeResult =
+  | { result: AnyValue; error?: undefined }
+  | { result?: undefined; error: AnyValue }
+
+export type RefCell = [value: AnyValue, refCount: number]
 
 export type Heap = Map<number, RefCell>
 
@@ -65,13 +67,12 @@ export type Heap = Map<number, RefCell>
  *
  * NB: Integer and double `0` values are truthy!
  */
-export function toBoolean(value: TaggedValue): boolean {
+export function toBoolean(value: AnyValue): boolean {
   switch (value[0]) {
-    case TypeTag.TYPE_UNDEFINED:
-    case TypeTag.TYPE_NULL:
+    case Type.NULL:
       return false
 
-    case TypeTag.TYPE_BOOLEAN:
+    case Type.BOOL:
       return value[1]
 
     default:
@@ -80,29 +81,17 @@ export function toBoolean(value: TaggedValue): boolean {
 }
 
 /**
- * If a value is a heap pointer, dereference it.
- */
-export function deref(value: TaggedValue, heap: Heap): TaggedValue | undefined {
-  switch (value[0]) {
-    case TypeTag.TYPE_REF:
-      return heap.get(value[1])?.[0]
-
-    default:
-      return value
-  }
-}
-
-/**
  * Convert an integral tagged value to a number clamped in uint32 range.
  */
-export function integralToU32(
-  value: TaggedValue | undefined
-): number | undefined {
+export function toU32(value: AnyValue | undefined): number | undefined {
   if (value === undefined) return undefined
   switch (value[0]) {
-    case TypeTag.TYPE_INT64:
-    case TypeTag.TYPE_UINT64:
+    case Type.INT64:
+    case Type.UINT64:
       return Number(BigInt.asUintN(32, value[1]))
+
+    case Type.DOUBLE:
+      return Math.max(0, Math.min(4294967295, value[1]))
 
     default:
       return undefined

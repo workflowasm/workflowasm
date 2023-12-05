@@ -1,9 +1,9 @@
-import { Status, Code } from "@workflowasm/protocols-js"
-import { TaggedValue, TypeTag } from "./value.js"
+import { Status, Code as StatusCode } from "@workflowasm/protocols-js"
+import { type AnyValue, Type } from "./value.js"
 
-export { Code as StatusCode }
+export { StatusCode }
 
-export function makeError(code: Code, message: string): TaggedValue {
+export function makeError(code: StatusCode, message: string): AnyValue {
   const status = new Status({ code, message })
-  return [TypeTag.TYPE_OBJECT, status]
+  return [Type.OBJECT, status]
 }

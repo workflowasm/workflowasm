@@ -200,11 +200,12 @@ export enum Opcode {
   /**
    * Computes the Boolean equivalent of the value atop the stack. If the result
    * is equivalent to `i1`,
-   * the next instruction in the code segment is executed. If the
-   * result is not, the next instruction in the code segment is skipped.
+   * the next instruction in the code segment is skipped. If the
+   * result is not, the next instruction in the code segment is executed.
+   * The next instruction is expected to be a JMP to an "else" branch.
    *
-   * `i1`: If `i1 == 0`, the branch is taken if false. If `i1 == 1`, the branch
-   * is taken if true.
+   * `i1`: If `i1 == 0`, the branch is taken if true. If `i1 != 0`, the branch
+   * is taken if false.
    *
    * Stack signature: `[-1]`
    *
@@ -227,25 +228,22 @@ export enum Opcode {
    * from `stack(-2)` to `stack(-2 - stack(-1) - 1)`. If the function
    * returns with success, leaves the return value on the stack.
    *
-   * Stack signature: `[-(stack(-1) + 2), 1]`
+   * `i1`: If `i1 == 1`, this call is treated as a `try`. `result` and `error`
+   * are pushed to the stack, with `error` being `null` if there was no error.
+   * and `result` being `null` if an error was caught.
+   *
+   * Stack signature: `[-(stack(-1) + 2), (i1 == 1) ? 2 : 1]`
    *
    * @generated from enum value: OP_CALL = 16;
    */
   OP_CALL = 16,
 
   /**
-   * As `OP_CALL`, but registers this frame as an error handler.
-   *
-   * @generated from enum value: OP_TRYCALL = 17;
-   */
-  OP_TRYCALL = 17,
-
-  /**
    * Return to the previous function in the call stack, with the instruction
    * pointer advanced past `OP_CALL`. The value of `stack(0)` will be returned
-   * and pushed at the call site.
+   * and pushed at the call site as a successful result.
    *
-   * Stack signature: `[]`
+   * Stack signature: `[-1]`
    *
    * @generated from enum value: OP_RETURN = 18;
    */
@@ -261,7 +259,7 @@ export enum Opcode {
   OP_THROW = 19,
 
   /**
-   * Execute `OP(stack(-1), stack(0))`, pushing the result.
+   * Execute `OP(stack(0), stack(-1))`, pushing the result.
    *
    * Stack signature: `[-2, 1]`
    *
@@ -355,7 +353,6 @@ proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
   { no: 14, name: "OP_TEST" },
   { no: 15, name: "OP_JMP" },
   { no: 16, name: "OP_CALL" },
-  { no: 17, name: "OP_TRYCALL" },
   { no: 18, name: "OP_RETURN" },
   { no: 19, name: "OP_THROW" },
   { no: 20, name: "OP_BINOP" },
@@ -446,12 +443,36 @@ export enum Unop {
    * @generated from enum value: UNOP_LEN = 2;
    */
   LEN = 2,
+
+  /**
+   * @generated from enum value: UNOP_STRING = 3;
+   */
+  STRING = 3,
+
+  /**
+   * @generated from enum value: UNOP_INT64 = 4;
+   */
+  INT64 = 4,
+
+  /**
+   * @generated from enum value: UNOP_UINT64 = 5;
+   */
+  UINT64 = 5,
+
+  /**
+   * @generated from enum value: UNOP_DOUBLE = 6;
+   */
+  DOUBLE = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Unop)
 proto3.util.setEnumType(Unop, "workflowasm.lang.v1.Unop", [
   { no: 0, name: "UNOP_MINUS" },
   { no: 1, name: "UNOP_NOT" },
   { no: 2, name: "UNOP_LEN" },
+  { no: 3, name: "UNOP_STRING" },
+  { no: 4, name: "UNOP_INT64" },
+  { no: 5, name: "UNOP_UINT64" },
+  { no: 6, name: "UNOP_DOUBLE" },
 ]);
 
 /**

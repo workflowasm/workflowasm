@@ -235,7 +235,6 @@ enum Binop {
 enum Unop {
   UNOP_MINUS = 0;
   UNOP_NOT = 1;
-  UNOP_LEN = 2;
 }
 
 // A single instruction in a WorkflowASM program.

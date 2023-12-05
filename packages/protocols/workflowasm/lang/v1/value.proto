@@ -5,6 +5,37 @@ package workflowasm.lang.v1;
 import "google/protobuf/any.proto";
 import "google/protobuf/struct.proto";
 
+// Short integral codes for the WorkflowASM value types.
+//
+// NB: These must match exactly with the
+// `oneof` field numbers in the `workflowasm.lang.v1.Value` message
+// type. (Except for `TYPE_UNKNOWN` which has no corresponding values)
+enum Type {
+  TYPE_UNKNOWN = 0;
+  TYPE_NULL = 1;
+  TYPE_BOOL = 2;
+  TYPE_INT64 = 3;
+  TYPE_UINT64 = 4;
+  TYPE_DOUBLE = 5;
+  TYPE_STRING = 6;
+  TYPE_BYTES = 7;
+  TYPE_ENUM = 8;
+  TYPE_OBJECT = 9;
+  TYPE_MAP = 10;
+  TYPE_LIST = 11;
+  TYPE_TYPE = 12;
+  TYPE_CALLABLE = 13;
+}
+
+// Short integral codes for the species of callables that can be stored
+// as values within the VM.
+enum CallableType {
+  CALLABLE_TYPE_UNKNOWN = 0;
+  CALLABLE_TYPE_NATIVE = 1;
+  CALLABLE_TYPE_FUNCTION = 2;
+  CALLABLE_TYPE_CLOSURE = 3;
+}
+
 // A fully resolved value
 message Value {
   oneof kind {

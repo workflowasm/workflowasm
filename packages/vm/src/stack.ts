@@ -1,29 +1,19 @@
-import { TaggedValue, ClosureValue } from "./value.js"
+import { type AnyValue, type CallableValue } from "./value.js"
+import { FrameType } from "@workflowasm/protocols-js"
 
-export type Stack = TaggedValue[]
+export { FrameType }
+
+export type Stack = AnyValue[]
 
 /**
- * Find the value at the given stack index, returning undefined if the
- * index is out of range.
+ * A stack frame on the call stack of the VM state.
  */
-export function at(stack: Stack, index: number): TaggedValue | undefined {
-  if (stack.length === 0) return undefined
-  if (Math.abs(index) >= stack.length) return undefined
-  return stack[index - 1 + (index <= 0 ? stack.length : 0)]
-}
-
-export enum FrameMode {
-  UNKNOWN = 0,
-  MAIN_FUNCTION = 1,
-  CALLED_FUNCTION = 2,
-  TRIED_FUNCTION = 3,
-  CLEANUP_FUNCTION = 4,
-  SCOPE = 5,
-  GLOBAL = 6
-}
-
 export class Frame {
-  mode: FrameMode = FrameMode.UNKNOWN
+  /**
+   * Frame type. Indicates how return values and cleanup should be handled
+   * as this frame is popped from the call stack.
+   */
+  type: FrameType = FrameType.UNKNOWN
 
   /**
    * Current working stack. The end of the array is the top of the stack.
@@ -44,34 +34,35 @@ export class Frame {
   /**
    * Local variables
    */
-  locals = new Map<string, TaggedValue>()
+  locals = new Map<string, AnyValue>()
 
   /**
    * Value to be returned.
    */
-  returnValue: TaggedValue | undefined = undefined
+  returnValue: AnyValue | undefined = undefined
 
   /**
    * Error to be returned.
    */
-  returnError: TaggedValue | undefined = undefined
+  returnError: AnyValue | undefined = undefined
 
   /**
    * Deferred calls.
    */
-  deferred: ClosureValue[] | undefined = undefined
+  deferred: CallableValue[] | undefined = undefined
 
   /**
    * Returns `true` if this is a control frame, i.e. one that has a stack and
    * instruction pointer.
    */
   isControlFrame(): boolean {
-    return (
-      this.mode >= FrameMode.MAIN_FUNCTION &&
-      this.mode <= FrameMode.CLEANUP_FUNCTION
-    )
+    return !!this.stack
   }
 
+  /**
+   * Returns `true` if this frame's execution has terminated in either an
+   * error or successful return state.
+   */
   isTerminated(): boolean {
     if (this.returnValue !== undefined || this.returnError !== undefined)
       return true
@@ -81,7 +72,7 @@ export class Frame {
   /**
    * Terminate the current frame with an error
    */
-  throwError(err: TaggedValue) {
+  throwError(err: AnyValue) {
     this.returnError = err
   }
 }
