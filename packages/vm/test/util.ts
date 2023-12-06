@@ -1,4 +1,20 @@
-import { Opcode, AnyValue, builtins, Config, NativeFunction, State } from ".."
+import {
+  Opcode,
+  AnyValue,
+  builtins,
+  Config,
+  NativeFunction,
+  State,
+  StatusCode,
+  Null,
+  RunningStatus,
+  step,
+  dumpState
+} from ".."
+
+class DebuggableState extends State {
+  _traceValues: AnyValue[] = []
+}
 
 export type FuncDef = {
   instructions: [Opcode, number][]
@@ -7,8 +23,19 @@ export type FuncDef = {
 export type FuncMap = Record<string, FuncDef>
 
 const localNativeFunctions: Record<string, NativeFunction> = {
-  debug_push: {
-    nativeFunctionSync(state, args) {}
+  trace_value: {
+    nativeFunctionSync(state, args) {
+      if (args.length !== 1) {
+        return {
+          error: state.makeError(
+            StatusCode.INVALID_ARGUMENT,
+            "requires 1 argument"
+          )
+        }
+      }
+      ;(state as DebuggableState)._traceValues.push(args[0])
+      return { result: Null }
+    }
   }
 }
 
@@ -23,7 +50,7 @@ export function makeVm(code: FuncMap, mainArgs: AnyValue[] = []) {
     override getNativeFunction(
       functionPointer: string
     ): NativeFunction | undefined {
-      return builtins.nativeFunctions[functionPointer]
+      return nativeFunctions[functionPointer]
     }
 
     override getInstruction(
@@ -40,5 +67,19 @@ export function makeVm(code: FuncMap, mainArgs: AnyValue[] = []) {
       return code[functionPointer]?.constants[constantPointer]
     }
   }
-  return new State(new TestConfig(), "main", mainArgs)
+  return new DebuggableState(new TestConfig(), "main", mainArgs)
+}
+
+export function runVm(
+  code: FuncMap,
+  mainArgs: AnyValue[] = [],
+  dump: boolean = false
+) {
+  const state = makeVm(code, mainArgs)
+  if (dump) console.log(dumpState(state))
+  while (state.getRunningStatus() === RunningStatus.RUN) {
+    step(state)
+    if (dump) console.log(dumpState(state))
+  }
+  return state
 }

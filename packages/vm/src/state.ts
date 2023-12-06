@@ -150,6 +150,17 @@ export class State {
   }
 
   /**
+   * Get the result (error or value) from a VM state that is halted.
+   */
+  getResult(): [value: AnyValue | undefined, error: AnyValue | undefined] {
+    if (this.getRunningStatus() === RunningStatus.HALT) {
+      return [this.callStack[0].returnValue, this.callStack[0].returnError]
+    } else {
+      throw new Error("getResult() called on a VM state that is still running")
+    }
+  }
+
+  /**
    * Add a frame to the call stack.
    */
   pushFrame(frame: Frame): void {
