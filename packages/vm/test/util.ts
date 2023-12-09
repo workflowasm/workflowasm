@@ -11,6 +11,7 @@ import {
   step,
   dumpState
 } from ".."
+import { Status, Type } from "@workflowasm/protocols-js"
 
 class DebuggableState extends State {
   _traceValues: AnyValue[] = []
@@ -29,7 +30,7 @@ const localNativeFunctions: Record<string, NativeFunction> = {
         return {
           error: state.makeError(
             StatusCode.INVALID_ARGUMENT,
-            "requires 1 argument"
+            "trace_value: requires 1 argument"
           )
         }
       }
@@ -82,4 +83,15 @@ export function runVm(
     if (dump) console.log(dumpState(state))
   }
   return state
+}
+
+export function getErrorMessage(
+  result: [AnyValue | undefined, AnyValue | undefined]
+): string {
+  if (result[0] !== undefined) throw new Error("result wasn't an error")
+  if (result[1] === undefined) throw new Error("result wasn't an error")
+  if (result[1][0] !== Type.OBJECT) throw new Error("error wasnt a Type.OBJECT")
+  if (result[1][1].getType().typeName !== Status.typeName)
+    throw new Error("error wasn't a google.rpc.Status")
+  return (result[1][1] as Status).message
 }

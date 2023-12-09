@@ -60,7 +60,8 @@ module.exports = {
             "plugin:@typescript-eslint/recommended",
             "plugin:@typescript-eslint/recommended-requiring-type-checking",
             "plugin:import/recommended",
-            "plugin:import/typescript"
+            "plugin:import/typescript",
+            "prettier"
           ],
           rules: {
             "@typescript-eslint/strict-boolean-expressions": "error",
@@ -77,7 +78,15 @@ module.exports = {
               { args: "after-used", argsIgnorePattern: "^_" }
             ],
             "import/no-cycle": "error",
-            "import/no-duplicates": "off"
+            "import/no-duplicates": "off",
+            "no-restricted-syntax": [
+              "error",
+              {
+                selector: "TSEnumDeclaration[const=true]",
+                message:
+                  "`const enum` is incompatible with TypeScript `isolatedModules` and should not be used in library code."
+              }
+            ]
           }
         }
       }),

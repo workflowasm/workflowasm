@@ -1,10 +1,6 @@
 import { type CallStack, Frame, FrameType, type Stack } from "./stack.js"
 import { Opcode, State } from "./state.js"
-import { type AnyValue, type Heap, Type, CallableType } from "./value.js"
-
-function dumpHeap(_heap: Heap): string {
-  return ""
-}
+import { type AnyValue, Type, CallableType } from "./value.js"
 
 function dumpValue(x: AnyValue | undefined): string {
   if (x === undefined) return "undefined"
@@ -37,11 +33,15 @@ function dumpValue(x: AnyValue | undefined): string {
 
 function dumpValueStack(stack: Stack | undefined): string {
   if (stack === undefined) return "none"
-  return stack.map((x) => dumpValue(x)).join(", ")
+  return stack
+    .slice()
+    .reverse()
+    .map((x) => dumpValue(x))
+    .join(", ")
 }
 
 function dumpFrame(state: State, frame: Frame): string {
-  return `Frame: ${FrameType[frame.type]} ${
+  return `${FrameType[frame.type]} ${
     frame.fp
       ? frame.fp +
         "@" +
@@ -50,23 +50,25 @@ function dumpFrame(state: State, frame: Frame): string {
         Opcode[(state._config.getInstruction(frame.fp, frame.ip) ?? [0])[0]] +
         ")"
       : ""
-  }\n${
+  } ${
     !!frame.returnError || !!frame.returnValue
       ? "TERMINATED [" +
         dumpValue(frame.returnValue) +
         ", " +
         dumpValue(frame.returnError) +
-        "]\n"
+        "]"
       : ""
-  }Stack: [${dumpValueStack(frame.stack)}]\n---`
+  } [${dumpValueStack(frame.stack)}]`
 }
 
 function dumpCallStack(state: State, stack: CallStack): string {
-  return stack.map((frame) => dumpFrame(state, frame)).join("\n")
+  return stack
+    .slice()
+    .reverse()
+    .map((frame) => dumpFrame(state, frame))
+    .join("\n")
 }
 
 export function dumpState(state: State): string {
-  return `Heap:\n-----\n${dumpHeap(
-    state.heap
-  )}\n\nCallstack:\n-----\n${dumpCallStack(state, state.callStack)}`
+  return `${dumpCallStack(state, state.callStack)}`
 }

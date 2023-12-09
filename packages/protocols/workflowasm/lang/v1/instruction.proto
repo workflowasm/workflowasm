@@ -229,6 +229,8 @@ enum Binop {
   BINOP_POW = 5;
   BINOP_AND = 6;
   BINOP_OR = 7;
+  BINOP_EQ = 8;
+  BINOP_LT = 10;
 }
 
 // Unary operators

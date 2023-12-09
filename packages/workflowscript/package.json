@@ -1,11 +1,11 @@
 {
-  "name": "@workflowasm/vm",
+  "name": "@workflowasm/workflowscript",
   "version": "0.1.0",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Reference implementation of the WorkflowASM stack-based virtual machine in JavaScript.",
+  "description": "Implementation of a C-like compiled language targeting the WorkflowASM virtual machine.",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -41,6 +41,8 @@
   },
   "dependencies": {
     "@workflowasm/protocols-js": "^0.1.0",
-    "@bufbuild/protobuf": "^1.4.2"
+    "@workflowasm/vm": "^0.1.0",
+    "charcodes": "0.2.0",
+    "@types/charcodes": "0.2.2"
   }
 }
