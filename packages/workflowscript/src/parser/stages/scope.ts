@@ -4,9 +4,8 @@ import { Tokenizer } from "./tokenizer.js"
 import { Errors } from "../error.js"
 
 // Each scope gets a bitset that may contain these flags
-/* eslint-disable prettier/prettier */
 /* prettier-ignore */
-export const enum ScopeFlag {
+export enum ScopeFlag {
   OTHER        = 0b000000000,
   PROGRAM      = 0b000000001,
   FUNCTION     = 0b000000010,
@@ -21,7 +20,7 @@ export const enum ScopeFlag {
 }
 
 /* prettier-ignore */
-export const enum BindingFlag {
+export enum BindingFlag {
   // These flags are meant to be _only_ used inside the Scope class (or subclasses).
   KIND_VALUE             = 0b0000000_0000_01,
   KIND_TYPE              = 0b0000000_0000_10,
@@ -66,7 +65,7 @@ export const enum BindingFlag {
 }
 
 /* prettier-ignore */
-export const enum ClassElementType {
+export enum ClassElementType {
   OTHER           = 0,
   FLAG_STATIC     = 0b1_00,
   KIND_GETTER     = 0b0_10,
@@ -99,12 +98,11 @@ export class Scope {
 export class ScopeHandler<IScope extends Scope = Scope> {
   parser: Tokenizer
   scopeStack: Array<IScope> = []
-  inModule: boolean
+  inModule: boolean = true
   undefinedExports: Map<string, Position> = new Map()
 
-  constructor(parser: Tokenizer, inModule: boolean) {
+  constructor(parser: Tokenizer) {
     this.parser = parser
-    this.inModule = inModule
   }
 
   get inTopLevel() {
@@ -295,6 +293,40 @@ export class ScopeHandler<IScope extends Scope = Scope> {
   }
 }
 
+export class ClassScope {
+  // A list of private named declared in the current class
+  privateNames: Set<string> = new Set()
+
+  // A list of private getters of setters without their counterpart
+  loneAccessors: Map<string, ClassElementType> = new Map()
+
+  // A list of private names used before being defined, mapping to
+  // their position.
+  undefinedPrivateNames: Map<string, Position> = new Map()
+}
+
+export default class ClassScopeHandler {
+  parser: Tokenizer
+  stack: Array<ClassScope> = []
+  undefinedPrivateNames: Map<string, Position> = new Map()
+
+  constructor(parser: Tokenizer) {
+    this.parser = parser
+  }
+
+  current(): ClassScope {
+    return this.stack[this.stack.length - 1]
+  }
+
+  enter() {
+    this.stack.push(new ClassScope())
+  }
+
+  exit() {
+    this.stack.pop()
+  }
+}
+
 export class ScopeParser extends Tokenizer {
-  scope: ScopeHandler<Scope>
+  scope: ScopeHandler<Scope> = new ScopeHandler<Scope>(this)
 }

@@ -150,7 +150,7 @@ export function callInternal(
             undefined,
             state.makeError(
               StatusCode.INTERNAL,
-              "Implementation of native function threw a JS exception. This should never happen."
+              "Implementation of native function threw a native exception. This indicates a bug in the implementation of the native function."
             )
           )
         }

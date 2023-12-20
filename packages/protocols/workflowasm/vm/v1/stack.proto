@@ -25,8 +25,8 @@ enum FrameType {
   FRAME_TYPE_PASSTHROUGH = 5;
 
   // Frame associated with an asynchronous native call
-  FRAME_ASYNC = 6;
+  FRAME_TYPE_ASYNC = 6;
 
   // Frame associated with a total VM suspension (long await)
-  FRAME_SUSPEND = 7;
+  FRAME_TYPE_SUSPEND = 7;
 }

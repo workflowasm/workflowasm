@@ -210,7 +210,6 @@ export const tt = {
   _fn: createKeyword("fn", { startsExpr }),
   _if: createKeyword("if"),
   _return: createKeyword("return", { beforeExpr }),
-  _switch: createKeyword("switch"),
   _throw: createKeyword("throw", { beforeExpr, prefix, startsExpr }),
   _try: createKeyword("try"),
   _const: createKeyword("const"),
@@ -271,9 +270,8 @@ export const tt = {
   // end: isIdentifier
 
   string: createToken("string", { startsExpr }),
-  num: createToken("num", { startsExpr }),
-  bigint: createToken("bigint", { startsExpr }),
-  decimal: createToken("decimal", { startsExpr }),
+  int: createToken("int", { startsExpr }),
+  float: createToken("float", { startsExpr }),
   // end: isLiteralPropertyName
   eof: createToken("eof")
 } as const
@@ -293,7 +291,7 @@ export function tokenIsKeywordOrIdentifier(token: TokenType): boolean {
 }
 
 export function tokenIsLiteralPropertyName(token: TokenType): boolean {
-  return token >= tt._in && token <= tt.decimal
+  return token >= tt._in && token <= tt.float
 }
 
 export function tokenComesBeforeExpression(token: TokenType): boolean {

@@ -152,7 +152,6 @@ export default class CommentsParser extends BaseParser {
             adjustInnerComments(node, node.properties, commentWS)
             break
           case "CallExpression":
-          case "OptionalCallExpression":
             adjustInnerComments(node, node.arguments, commentWS)
             break
           case "FunctionDeclaration":
@@ -163,7 +162,7 @@ export default class CommentsParser extends BaseParser {
           case "ArrayPattern":
             adjustInnerComments(node, node.elements, commentWS)
             break
-          case "ExportNamedDeclaration":
+          // case "ExportNamedDeclaration":
           case "ImportDeclaration":
             adjustInnerComments(node, node.specifiers, commentWS)
             break

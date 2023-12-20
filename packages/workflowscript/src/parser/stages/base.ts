@@ -2,9 +2,11 @@ import type { Options } from "../options.js"
 import type State from "../state.js"
 import { Position, buildPosition } from "../position.js"
 import { type ParseErrorConstructor, ParseError } from "../error.js"
-import { Node } from "../../ast.js"
+import { type Node, type Incomplete } from "../../ast.js"
 
-type RaiseProperties<DetailsT> = { at: Position | Node } & DetailsT
+type RaiseProperties<DetailsT> = {
+  at: Position | Node | Incomplete<Node>
+} & DetailsT
 
 export class BaseParser {
   declare options: Options

@@ -744,7 +744,6 @@ export class Tokenizer extends CommentsParser {
 
   readRadixNumber(radix: number): void {
     const startLoc = this.state.curPosition()
-    let isBigInt = false
 
     this.state.pos += 2 // 0x
     const val = this.readInt(radix)
@@ -755,12 +754,6 @@ export class Tokenizer extends CommentsParser {
         radix
       })
     }
-    const next = this.input.charCodeAt(this.state.pos)
-
-    if (next === charCodes.lowercaseN) {
-      ++this.state.pos
-      isBigInt = true
-    }
 
     if (isIdentifierStart(this.codePointAtPos(this.state.pos))) {
       throw this.raise(Errors.NumberIdentifier, {
@@ -768,15 +761,10 @@ export class Tokenizer extends CommentsParser {
       })
     }
 
-    if (isBigInt) {
-      const str = this.input
-        .slice(startLoc.index, this.state.pos)
-        .replace(/[_n]/g, "")
-      this.finishToken(tt.bigint, str)
-      return
-    }
-
-    this.finishToken(tt.num, val)
+    const str = this.input
+      .slice(startLoc.index, this.state.pos)
+      .replace(/[_n]/g, "")
+    this.finishToken(tt.int, str)
   }
 
   // Read an integer or floating-point number.
@@ -784,8 +772,6 @@ export class Tokenizer extends CommentsParser {
     const start = this.state.pos
     const startLoc = this.state.curPosition()
     let isFloat = false
-    let isBigInt = false
-    let hasExponent = false
 
     if (!startsWithDot && this.readInt(10) === null) {
       this.raise(Errors.InvalidNumber, { at: this.state.curPosition() })
@@ -808,7 +794,6 @@ export class Tokenizer extends CommentsParser {
         this.raise(Errors.InvalidOrMissingExponent, { at: startLoc })
       }
       isFloat = true
-      hasExponent = true
       next = this.input.charCodeAt(this.state.pos)
     }
 
@@ -821,13 +806,11 @@ export class Tokenizer extends CommentsParser {
     // remove "_" for numeric literal separator, and trailing `m` or `n`
     const str = this.input.slice(start, this.state.pos).replace(/[_mn]/g, "")
 
-    if (isBigInt) {
-      this.finishToken(tt.bigint, str)
-      return
+    if (isFloat) {
+      this.finishToken(tt.float, str)
+    } else {
+      this.finishToken(tt.int, str)
     }
-
-    const val = parseFloat(str)
-    this.finishToken(tt.num, val)
   }
 
   // Read a string value, interpreting backslash-escapes.

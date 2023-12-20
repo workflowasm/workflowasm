@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package workflowasm.net.v1;
+
+// A CodeSinkService is the target of the WorkflowASM linker when it builds
+// and uploads new assemblies.
+//
+// NOTE: any network endpoints for this service should be appropriately secured
+// as it would allow an attacker to replace running code in any workers
+// connected to the corresponding `CodeSourceService`. The assembler creates
+// a virtual version of this service when working in a local filesystem; the
+// most secure path is to assemble code locally and push it via CI/CD to
+// the running `CodeSource` in your live environment.
+service CodeSinkService {
+  
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package workflowasm.net.v1;
+
+// A CodeSourceService provides WorkflowASM code to interested clients.
+// Clients SHOULD cache the code they get from this service in accordance
+// with the cache policy ticket attached to the returned code.
+service CodeSourceService {
+  
+}

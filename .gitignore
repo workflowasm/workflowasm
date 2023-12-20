@@ -1,4 +1,24 @@
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# installation
 node_modules/
+.pnp/
+.pnp.js
+.yarn/install-state.gz
+
+# build
 lib/
 dist/
 coverage/
+out/
+.next/
+build/
+*.tsbuildinfo
+next-env.d.ts

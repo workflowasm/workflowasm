@@ -1,3 +1,8 @@
+// TODO: is this necessary?
+export type Pos = {
+  start: number
+}
+
 // These are used when `options.locations` is on, for the
 // `startLoc` and `endLoc` properties.
 export class Position {
@@ -11,6 +16,8 @@ export class Position {
     this.index = index
   }
 }
+
+export const ZeroPosition = new Position(0, 0, 0)
 
 export function buildPosition(pos: number, lineStart: number, curLine: number) {
   return new Position(curLine, pos - lineStart, pos)

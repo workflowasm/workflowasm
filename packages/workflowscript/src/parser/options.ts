@@ -4,4 +4,6 @@ export type Options = {
   startColumn?: number
   tokens: boolean
   attachComment: boolean
+  ranges: boolean
+  createParenthesizedExpressions: boolean
 }

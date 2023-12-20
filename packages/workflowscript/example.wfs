@@ -1,0 +1,29 @@
+package pak.chooie.unf
+
+import from lang {
+  len ver "^1", string ver "^1"
+}
+
+@export @version("1.0.x")
+fn shove(who, where) {
+  return "shoved " + string(who) + " to " + where
+}
+
+@export @version("1.0.0")
+@splice
+fn splicable() {
+  // Initializes `a` on first call, keeps its value after splicing.
+  // The initialization expression is not re-evaluated.
+  @splice(keep) using a = getResource()
+  // `@splice(keep)` is the default for using variables, so this
+  // will behave the same.
+  using b = getResource()
+
+  const a = use resource()
+  // `b` will not be reinitialized
+  @splice(keep) let b = 3
+  // `c` will be reinitialized
+  @splice(reset) let c = 4
+  @splice(delete) const d
+
+}
