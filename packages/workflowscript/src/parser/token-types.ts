@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { TokenType } from "../ast.js"
+import { type TokenType } from "../ast.js"
 
-export { TokenType }
+export { type TokenType }
 
 // ## Token types
 
@@ -177,7 +177,7 @@ export const tt = {
   nullishCoalescing: createBinop("??", 1),
   logicalOR: createBinop("||", 1),
   logicalAND: createBinop("&&", 2),
-  equality: createBinop("==/!=/===/!==", 6),
+  equality: createBinop("==/!=", 6),
   lt: createBinop("</>/<=/>=", 7),
   gt: createBinop("</>/<=/>=", 7),
   relational: createBinop("</>/<=/>=", 7),
@@ -218,7 +218,6 @@ export const tt = {
   _super: createKeyword("super", { startsExpr }),
   _class: createKeyword("class", { startsExpr }),
   _extends: createKeyword("extends", { beforeExpr }),
-  _export: createKeyword("export"),
   _import: createKeyword("import", { startsExpr }),
   _null: createKeyword("null", { startsExpr }),
   _true: createKeyword("true", { startsExpr }),
@@ -250,6 +249,7 @@ export const tt = {
   _static: createKeywordLike("static", { startsExpr }),
   _using: createKeywordLike("using", { startsExpr }),
   _yield: createKeywordLike("yield", { startsExpr }),
+  _ver: createKeywordLike("ver", { startsExpr }),
 
   // Flow and TypeScript Keywordlike
   _global: createKeywordLike("global", { startsExpr }),

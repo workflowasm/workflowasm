@@ -53,6 +53,20 @@ export enum FrameType {
    * @generated from enum value: FRAME_TYPE_PASSTHROUGH = 5;
    */
   PASSTHROUGH = 5,
+
+  /**
+   * Frame associated with an asynchronous native call
+   *
+   * @generated from enum value: FRAME_TYPE_ASYNC = 6;
+   */
+  ASYNC = 6,
+
+  /**
+   * Frame associated with a total VM suspension (long await)
+   *
+   * @generated from enum value: FRAME_TYPE_SUSPEND = 7;
+   */
+  SUSPEND = 7,
 }
 // Retrieve enum metadata with: proto3.getEnumType(FrameType)
 proto3.util.setEnumType(FrameType, "workflowasm.vm.v1.FrameType", [
@@ -62,5 +76,7 @@ proto3.util.setEnumType(FrameType, "workflowasm.vm.v1.FrameType", [
   { no: 3, name: "FRAME_TYPE_TRY" },
   { no: 4, name: "FRAME_TYPE_IGNORE" },
   { no: 5, name: "FRAME_TYPE_PASSTHROUGH" },
+  { no: 6, name: "FRAME_TYPE_ASYNC" },
+  { no: 7, name: "FRAME_TYPE_SUSPEND" },
 ]);
 

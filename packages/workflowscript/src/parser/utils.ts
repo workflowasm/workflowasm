@@ -1,5 +1,5 @@
 import * as charCodes from "charcodes"
-import { LineBasedPosition } from "./position.js"
+import { type LineBasedPosition } from "./position.js"
 
 // The following character codes are forbidden from being
 // an immediate sibling of NumericLiteralSeparator _

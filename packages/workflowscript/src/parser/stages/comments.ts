@@ -57,15 +57,15 @@ export function setInnerComments(
  */
 function adjustInnerComments(
   node: Incomplete<Node>,
-  elements: Array<Node>,
+  elements: Array<Node | undefined>,
   commentWS: CommentWhitespace
 ) {
   let lastElement = null
   let i = elements.length
-  while (lastElement === null && i > 0) {
+  while (lastElement == null && i > 0) {
     lastElement = elements[--i]
   }
-  if (lastElement === null || lastElement.start > commentWS.start) {
+  if (lastElement == null || lastElement.start > commentWS.start) {
     setInnerComments(node, commentWS.comments)
   } else {
     setTrailingComments(lastElement, commentWS.comments)
@@ -156,7 +156,7 @@ export default class CommentsParser extends BaseParser {
             break
           case "FunctionDeclaration":
           case "FunctionExpression":
-            adjustInnerComments(node, node.params, commentWS)
+            adjustInnerComments(node, node.parameters, commentWS)
             break
           case "ArrayExpression":
           case "ArrayPattern":

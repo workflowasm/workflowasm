@@ -24,22 +24,6 @@ export default class State {
     )
   }
 
-  // init({
-  //   startLine,
-  //   startColumn
-  // }: {
-  //   startLine?: number
-  //   startColumn?: number
-  // }): void {
-  //   this.curLine = startLine ?? 0
-  //   this.lineStart = startColumn != null ? -startColumn : 0
-  //   this.startLoc = this.endLoc = new Position(
-  //     this.curLine,
-  //     startColumn ?? 0,
-  //     0
-  //   )
-  // }
-
   errors: ParseError<unknown>[] = []
 
   // Flags to track

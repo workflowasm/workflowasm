@@ -4,7 +4,8 @@ import type {
   Comment,
   Node as NodeType,
   NodeBase,
-  Incomplete
+  Incomplete,
+  Identifier
 } from "../../ast.js"
 
 // Start an AST node, attaching a start offset.
@@ -14,8 +15,8 @@ class Node implements NodeBase {
     this.start = pos
     this.end = 0
     this.loc = new SourceLocation(loc)
-    if (parser?.options.ranges) this.range = [pos, 0]
-    if (parser?.filename) this.loc.filename = parser.filename
+    if (parser?.options.ranges ?? false) this.range = [pos, 0]
+    if (parser?.filename !== undefined) this.loc.filename = parser.filename
   }
 
   type: string = ""
@@ -27,6 +28,7 @@ class Node implements NodeBase {
   declare trailingComments: Array<Comment>
   declare innerComments: Array<Comment>
   declare extra: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any
   }
 }
@@ -52,16 +54,12 @@ NodePrototype.__clone = function (): Node {
   return newNode
 }
 
-function clonePlaceholder(node: any): any {
-  return cloneIdentifier(node)
-}
-
-export function cloneIdentifier(node: any): any {
+export function cloneIdentifier<T extends Identifier>(node: T): T {
   // We don't need to clone `typeAnnotations` and `optional`: because
   // cloneIdentifier is only used in object shorthand and named import/export.
   // Neither of them allow type annotations after the identifier or optional identifier
   const { type, start, end, loc, range, extra, name } = node
-  const cloned = Object.create(NodePrototype)
+  const cloned = Object.create(NodePrototype) as T
   cloned.type = type
   cloned.start = start
   cloned.end = end
@@ -69,30 +67,7 @@ export function cloneIdentifier(node: any): any {
   cloned.range = range
   cloned.extra = extra
   cloned.name = name
-  if (type === "Placeholder") {
-    cloned.expectedNode = node.expectedNode
-  }
-  return cloned
-}
 
-export function cloneStringLiteral(node: any): any {
-  const { type, start, end, loc, range, extra } = node
-  if (type === "Placeholder") {
-    return clonePlaceholder(node)
-  }
-  const cloned = Object.create(NodePrototype)
-  cloned.type = type
-  cloned.start = start
-  cloned.end = end
-  cloned.loc = loc
-  cloned.range = range
-  if (node.raw !== undefined) {
-    // estree set node.raw instead of node.extra
-    cloned.raw = node.raw
-  } else {
-    cloned.extra = extra
-  }
-  cloned.value = node.value
   return cloned
 }
 

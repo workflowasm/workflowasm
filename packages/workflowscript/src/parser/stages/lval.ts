@@ -11,7 +11,6 @@ import type {
   ObjectProperty,
   ObjectExpression,
   ObjectPattern,
-  ArrayExpression,
   ArrayPattern,
   Incomplete,
   Annotation,
@@ -416,10 +415,7 @@ export default abstract class LValParser extends NodeParser {
     return this.parseObjPropValue(
       prop as Incomplete<ObjectProperty>,
       startLoc,
-      false /* isGenerator */,
-      false /* isAsync */,
-      true /* isPattern */,
-      false /* isAccessor */
+      true /* isPattern */
     )
   }
 
@@ -539,12 +535,7 @@ export default abstract class LValParser extends NodeParser {
    *        not have to set it yourself.
    */
   checkLVal(
-    expression:
-      | Expression
-      | ObjectProperty
-      | RestElement
-      | ArrayPattern
-      | ObjectPattern,
+    expression: Expression | ObjectProperty | Pattern,
     {
       in: ancestor,
       binding = BindingFlag.TYPE_NONE,

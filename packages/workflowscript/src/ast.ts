@@ -82,7 +82,7 @@ export interface AnnotatedNode extends NodeBase {
 
 export interface ParserOutput {
   comments: Comment[]
-  errors: ParseError<unknown>[]
+  errors?: ParseError<unknown>[]
   tokens?: (Token | Comment)[]
 }
 
@@ -102,6 +102,8 @@ export type LooseNode =
   | Annotation
   | SwitchCase
   | VariableDeclarator
+  | DotPath
+  | ImportSpecifier
 
 export type Incomplete<NodeT extends Node> = Omit<NodeT, "type">
 
@@ -113,7 +115,7 @@ export interface File extends NodeBase, ParserOutput {
 
 export interface Program extends NodeBase {
   type: "Program"
-  declarations: Declaration[]
+  body: Statement[]
 }
 
 export type Container = File | Program
@@ -124,6 +126,11 @@ export interface Identifier extends NodeBase {
   name: string
 }
 
+export interface DotPath extends NodeBase {
+  type: "DotPath"
+  identifiers: Identifier[]
+}
+
 //////////////// Literals
 export type Literal =
   | NullLiteral
@@ -132,6 +139,12 @@ export type Literal =
   | IntLiteral
   | FloatLiteral
   | TemplateLiteral
+
+export type PrimitiveValueLiteral =
+  | StringLiteral
+  | BooleanLiteral
+  | IntLiteral
+  | FloatLiteral
 
 export interface NullLiteral extends NodeBase {
   type: "NullLiteral"
@@ -409,7 +422,15 @@ export interface PackageDeclaration extends NodeBase {
 
 export interface ImportDeclaration extends NodeBase {
   type: "ImportDeclaration"
-  from: Identifier
+  from: DotPath
+  specifiers: ImportSpecifier[]
+}
+
+export interface ImportSpecifier extends NodeBase {
+  type: "ImportSpecifier"
+  imported: Identifier
+  semver: StringLiteral
+  as: Identifier
 }
 
 export type VariableDeclarationKind = "let" | "const"
@@ -427,13 +448,14 @@ export interface VariableDeclarator extends NodeBase {
 }
 
 ////////// Patterns
-export type Pattern =
+export type NonAssignmentPattern =
   | Identifier
   | ObjectPattern
   | ArrayPattern
   | RestElement
-  | AssignmentPattern
   | EmptyPattern
+
+export type Pattern = NonAssignmentPattern | AssignmentPattern
 
 export interface PatternBase extends NodeBase {
   annotations?: Annotation[]

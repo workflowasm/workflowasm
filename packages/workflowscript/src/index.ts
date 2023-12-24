@@ -1,7 +1,7 @@
 import * as AST from "./ast.js"
 
-import LValParser from "./parser/stages/lval.js"
+import Parser from "./parser/stages/parser.js"
 
-export { LValParser }
+export { Parser }
 
 export { AST }

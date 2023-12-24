@@ -410,6 +410,16 @@ export enum Binop {
    * @generated from enum value: BINOP_OR = 7;
    */
   OR = 7,
+
+  /**
+   * @generated from enum value: BINOP_EQ = 8;
+   */
+  EQ = 8,
+
+  /**
+   * @generated from enum value: BINOP_LT = 10;
+   */
+  LT = 10,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Binop)
 proto3.util.setEnumType(Binop, "workflowasm.lang.v1.Binop", [
@@ -421,6 +431,8 @@ proto3.util.setEnumType(Binop, "workflowasm.lang.v1.Binop", [
   { no: 5, name: "BINOP_POW" },
   { no: 6, name: "BINOP_AND" },
   { no: 7, name: "BINOP_OR" },
+  { no: 8, name: "BINOP_EQ" },
+  { no: 10, name: "BINOP_LT" },
 ]);
 
 /**
@@ -438,41 +450,11 @@ export enum Unop {
    * @generated from enum value: UNOP_NOT = 1;
    */
   NOT = 1,
-
-  /**
-   * @generated from enum value: UNOP_LEN = 2;
-   */
-  LEN = 2,
-
-  /**
-   * @generated from enum value: UNOP_STRING = 3;
-   */
-  STRING = 3,
-
-  /**
-   * @generated from enum value: UNOP_INT64 = 4;
-   */
-  INT64 = 4,
-
-  /**
-   * @generated from enum value: UNOP_UINT64 = 5;
-   */
-  UINT64 = 5,
-
-  /**
-   * @generated from enum value: UNOP_DOUBLE = 6;
-   */
-  DOUBLE = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Unop)
 proto3.util.setEnumType(Unop, "workflowasm.lang.v1.Unop", [
   { no: 0, name: "UNOP_MINUS" },
   { no: 1, name: "UNOP_NOT" },
-  { no: 2, name: "UNOP_LEN" },
-  { no: 3, name: "UNOP_STRING" },
-  { no: 4, name: "UNOP_INT64" },
-  { no: 5, name: "UNOP_UINT64" },
-  { no: 6, name: "UNOP_DOUBLE" },
 ]);
 
 /**

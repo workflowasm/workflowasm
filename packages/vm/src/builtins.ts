@@ -490,5 +490,7 @@ export function binop(
       return [Type.BOOL, toBoolean(arg1) && toBoolean(arg2)]
     case Binop.OR:
       return [Type.BOOL, toBoolean(arg1) || toBoolean(arg2)]
+    default:
+      return undefined
   }
 }

@@ -9,7 +9,7 @@ import type State from "../state.js"
 import type { Node, ObjectProperty } from "../../ast.js"
 import { lineBreak, skipWhiteSpaceToLineBreak } from "../utils.js"
 import { isIdentifierChar } from "../identifier.js"
-import ClassScopeHandler from "./scope.js"
+import { ClassScopeHandler } from "./scope.js"
 import { ScopeFlag } from "./scope.js"
 import {
   Errors,

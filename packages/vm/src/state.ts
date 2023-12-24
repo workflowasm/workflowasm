@@ -146,6 +146,9 @@ export class State {
       case FrameType.IGNORE:
       case FrameType.PASSTHROUGH:
         return RunningStatus.RUN
+
+      default:
+        return RunningStatus.HALT
     }
   }
 
@@ -221,6 +224,8 @@ export class State {
         this.peekFrame().returnError = poppedFrame.returnError
         this.peekFrame().returnValue = poppedFrame.returnValue
         break
+      default:
+        throw new Error("Unsupported fraome type")
     }
   }
 

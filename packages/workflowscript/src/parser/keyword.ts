@@ -25,7 +25,6 @@ const reservedWords = {
     "super",
     "class",
     "extends",
-    "export",
     "import",
     "null",
     "true",

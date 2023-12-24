@@ -305,7 +305,7 @@ export class ClassScope {
   undefinedPrivateNames: Map<string, Position> = new Map()
 }
 
-export default class ClassScopeHandler {
+export class ClassScopeHandler {
   parser: Tokenizer
   stack: Array<ClassScope> = []
   undefinedPrivateNames: Map<string, Position> = new Map()
