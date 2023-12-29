@@ -1,65 +1,19 @@
 import UtilParser from "./util.js"
-import { SourceLocation, type Position, ZeroPosition } from "../position.js"
+import { type Position, ZeroPosition } from "../position.js"
 import type {
-  Comment,
   Node as NodeType,
   NodeBase,
   Incomplete,
   Identifier
 } from "../../ast/types.js"
-
-// Start an AST node, attaching a start offset.
-
-class Node implements NodeBase {
-  constructor(parser: NodeParser | undefined, pos: number, loc: Position) {
-    this.start = pos
-    this.end = 0
-    this.loc = new SourceLocation(loc)
-    if (parser?.options.ranges ?? false) this.range = [pos, 0]
-    if (parser?.filename !== undefined) this.loc.filename = parser.filename
-  }
-
-  type: string = ""
-  declare start: number
-  declare end: number
-  declare loc: SourceLocation
-  declare range: [number, number]
-  declare leadingComments: Array<Comment>
-  declare trailingComments: Array<Comment>
-  declare innerComments: Array<Comment>
-  declare extra: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any
-  }
-}
-const NodePrototype = Node.prototype
-
-// @ts-expect-error __clone is not defined in Node prototype
-NodePrototype.__clone = function (): Node {
-  const newNode = new Node(undefined, this.start, this.loc.start)
-  const keys = Object.keys(this) as (keyof Node)[]
-  for (let i = 0, length = keys.length; i < length; i++) {
-    const key = keys[i]
-    // Do not clone comments that are already attached to the node
-    if (
-      key !== "leadingComments" &&
-      key !== "trailingComments" &&
-      key !== "innerComments"
-    ) {
-      // @ts-expect-error cloning this to newNode
-      newNode[key] = this[key]
-    }
-  }
-
-  return newNode
-}
+import { Node } from "../../ast/node.js"
 
 export function cloneIdentifier<T extends Identifier>(node: T): T {
   // We don't need to clone `typeAnnotations` and `optional`: because
   // cloneIdentifier is only used in object shorthand and named import/export.
   // Neither of them allow type annotations after the identifier or optional identifier
   const { type, start, end, loc, range, extra, name } = node
-  const cloned = Object.create(NodePrototype) as T
+  const cloned = Object.create(Node.prototype) as T
   cloned.type = type
   cloned.start = start
   cloned.end = end
@@ -73,13 +27,21 @@ export function cloneIdentifier<T extends Identifier>(node: T): T {
 
 export abstract class NodeParser extends UtilParser {
   startNode<T extends NodeType>(): Incomplete<T> {
-    // @ts-expect-error cast Node as Incomplete<T>
-    return new Node(this, this.state.start, this.state.startLoc)
+    return new Node(
+      this.state.start,
+      this.state.startLoc,
+      this.options.ranges,
+      this.filename
+    ) as unknown as Incomplete<T>
   }
 
   startNodeAt<T extends NodeType>(loc: Position): Incomplete<T> {
-    // @ts-expect-error cast Node as Incomplete<T>
-    return new Node(this, loc.index, loc)
+    return new Node(
+      loc.index,
+      loc,
+      this.options.ranges,
+      this.filename
+    ) as unknown as Incomplete<T>
   }
 
   /** Start a new node with a previous node's location. */
@@ -89,8 +51,7 @@ export abstract class NodeParser extends UtilParser {
     return this.startNodeAt(type.loc.start)
   }
 
-  // Finish an AST node, adding `type` and `end` properties.
-
+  /** Finish an AST node, adding `type` and `end` properties. */
   finishNode<T extends NodeType>(node: Incomplete<T>, type: T["type"]): T {
     return this.finishNodeAt(
       node,
@@ -99,8 +60,7 @@ export abstract class NodeParser extends UtilParser {
     )
   }
 
-  // Finish node at given position
-
+  /** Finish node at given position */
   finishNodeAt<T extends NodeType>(
     node: Incomplete<T>,
     type: T["type"],
@@ -112,13 +72,13 @@ export abstract class NodeParser extends UtilParser {
           " Instead use resetEndLocation() or change type directly."
       )
     }
-    // @ts-expect-error migrate to Babel types AST typings
-    node.type = type
-    node.end = endLoc.index
-    node.loc.end = endLoc
-    if (this.options.ranges && !!node.range) node.range[1] = endLoc.index
-    if (this.options.attachComment) this.processComment(node as T)
-    return node as T
+    const nodeAsT = node as T
+    nodeAsT.type = type
+    nodeAsT.end = endLoc.index
+    nodeAsT.loc.end = endLoc
+    if (this.options.ranges && !!nodeAsT.range) nodeAsT.range[1] = endLoc.index
+    if (this.options.attachComment) this.processComment(nodeAsT)
+    return nodeAsT
   }
 
   resetStartLocation(node: NodeBase, startLoc: Position): void {

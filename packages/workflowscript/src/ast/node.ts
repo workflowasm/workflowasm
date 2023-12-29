@@ -1,7 +1,56 @@
 // Augment AST nodes with info
-import * as N from "./types.js"
-import { type Node } from "./types.js"
+import { SourceLocation, type Position } from "../parser/position.js"
+import type * as T from "./types.js"
 
+////////// Classy nodes
+export class Node implements T.NodeBase {
+  type: string = ""
+  declare start: number
+  declare end: number
+  declare loc: SourceLocation
+  declare range: [number, number]
+  declare leadingComments: Array<T.Comment>
+  declare trailingComments: Array<T.Comment>
+  declare innerComments: Array<T.Comment>
+  declare extra: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any
+  }
+
+  constructor(
+    pos: number,
+    loc: Position,
+    ranges: boolean = false,
+    filename?: string
+  ) {
+    this.start = pos
+    this.end = 0
+    this.loc = new SourceLocation(loc)
+    if (ranges) this.range = [pos, 0]
+    if (filename !== undefined) this.loc.filename = filename
+  }
+
+  __clone(): Node {
+    const newNode = new Node(this.start, this.loc.start)
+    const keys = Object.keys(this) as (keyof Node)[]
+    for (let i = 0, length = keys.length; i < length; i++) {
+      const key = keys[i]
+      // Do not clone comments that are already attached to the node
+      if (
+        key !== "leadingComments" &&
+        key !== "trailingComments" &&
+        key !== "innerComments"
+      ) {
+        // @ts-expect-error cloning this to newNode
+        newNode[key] = this[key]
+      }
+    }
+
+    return newNode
+  }
+}
+
+////////// Metadata
 /**
  * Various yes/no categorizations that an AST node can fall under.
  * Note also that each AST node type is an implicit category consisting
@@ -40,7 +89,7 @@ export interface NodeMetadata {
   /**
    * Final AST node type.
    */
-  type: Node["type"]
+  type: T.Node["type"]
 
   /**
    * Keys to traverse, in order, when recursing into child nodes.
@@ -56,21 +105,21 @@ export interface NodeMetadata {
 const nodes: Record<string, NodeMetadata> = {}
 const categories: Record<string, Set<string> | undefined> = {}
 
-export function getMetadata(t: Node["type"]): NodeMetadata {
+export function getMetadata(t: T.Node["type"]): NodeMetadata {
   return nodes[t]
 }
 
 //////////////// Metadata registration
 // Type-check registrations as they're being registered
-interface StrictNodeRegistration<T extends Node> {
-  type: T["type"]
-  traverse?: (keyof T)[]
+interface StrictNodeRegistration<NodeT extends T.Node> {
+  type: NodeT["type"]
+  traverse?: (keyof NodeT)[]
   categories?: NodeCategory[]
 }
 
-function registerNode<T extends Node>(
-  registration: NodeMetadata & StrictNodeRegistration<T>
-): { is: (n: Node) => n is T } {
+function registerNode<NodeT extends T.Node>(
+  registration: NodeMetadata & StrictNodeRegistration<NodeT>
+): { is: (n: T.Node) => n is NodeT } {
   const reg = registration as NodeMetadata
   nodes[reg.type] = reg
   reg.categories = reg.categories
@@ -83,113 +132,113 @@ function registerNode<T extends Node>(
 
   const ist = reg.type
   return {
-    is(n: Node | null | undefined): n is T {
+    is(n: T.Node | null | undefined): n is NodeT {
       return n?.type === ist
     }
   }
 }
 
-const { is: isFile } = registerNode<N.File>({
+const { is: isFile } = registerNode<T.File>({
   type: "File",
   traverse: ["program"]
 })
 export { isFile }
 
-registerNode<N.Program>({
+registerNode<T.Program>({
   type: "Program",
   traverse: ["body"],
   categories: [NodeCategory.Body, NodeCategory.Scope]
 })
 
-registerNode<N.Identifier>({
+registerNode<T.Identifier>({
   type: "Identifier",
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.DotPath>({
+registerNode<T.DotPath>({
   type: "DotPath"
 })
 
-registerNode<N.NullLiteral>({
+registerNode<T.NullLiteral>({
   type: "NullLiteral",
   categories: [NodeCategory.Expression, NodeCategory.Literal]
 })
 
-registerNode<N.StringLiteral>({
+registerNode<T.StringLiteral>({
   type: "StringLiteral",
   categories: [NodeCategory.Expression, NodeCategory.Literal]
 })
 
-registerNode<N.BooleanLiteral>({
+registerNode<T.BooleanLiteral>({
   type: "BooleanLiteral",
   categories: [NodeCategory.Expression, NodeCategory.Literal]
 })
 
-registerNode<N.IntLiteral>({
+registerNode<T.IntLiteral>({
   type: "IntLiteral",
   categories: [NodeCategory.Expression, NodeCategory.Literal]
 })
 
-registerNode<N.FloatLiteral>({
+registerNode<T.FloatLiteral>({
   type: "FloatLiteral",
   categories: [NodeCategory.Expression, NodeCategory.Literal]
 })
 
-registerNode<N.TemplateLiteral>({
+registerNode<T.TemplateLiteral>({
   type: "TemplateLiteral",
   traverse: ["quasis", "expressions"],
   categories: [NodeCategory.Expression, NodeCategory.Literal]
 })
 
-registerNode<N.UnaryExpression>({
+registerNode<T.UnaryExpression>({
   type: "UnaryExpression",
   traverse: ["argument"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.BinaryExpression>({
+registerNode<T.BinaryExpression>({
   type: "BinaryExpression",
   traverse: ["left", "right"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.CallExpression>({
+registerNode<T.CallExpression>({
   type: "CallExpression",
   traverse: ["callee", "arguments"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.MemberExpression>({
+registerNode<T.MemberExpression>({
   type: "MemberExpression",
   traverse: ["object", "property"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.ArrayExpression>({
+registerNode<T.ArrayExpression>({
   type: "ArrayExpression",
   traverse: ["elements"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.ObjectExpression>({
+registerNode<T.ObjectExpression>({
   type: "ObjectExpression",
   traverse: ["properties"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.ObjectProperty>({
+registerNode<T.ObjectProperty>({
   type: "ObjectProperty",
   traverse: ["annotations", "key", "value"],
   categories: [NodeCategory.Expression, NodeCategory.Annotated]
 })
 
-registerNode<N.AssignmentExpression>({
+registerNode<T.AssignmentExpression>({
   type: "AssignmentExpression",
   traverse: ["left", "right"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.FunctionExpression>({
+registerNode<T.FunctionExpression>({
   type: "FunctionExpression",
   traverse: ["annotations", "name", "parameters", "body"],
   categories: [
@@ -199,87 +248,87 @@ registerNode<N.FunctionExpression>({
   ]
 })
 
-registerNode<N.SequenceExpression>({
+registerNode<T.SequenceExpression>({
   type: "SequenceExpression",
   traverse: ["expressions"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.ConditionalExpression>({
+registerNode<T.ConditionalExpression>({
   type: "ConditionalExpression",
   traverse: ["test", "consequent", "alternate"],
   categories: [NodeCategory.Expression]
 })
 
-registerNode<N.TaggedTemplateExpression>({
+registerNode<T.TaggedTemplateExpression>({
   type: "TaggedTemplateExpression",
   traverse: ["tag", "quasi"]
 })
 
-registerNode<N.EmptyStatement>({
+registerNode<T.EmptyStatement>({
   type: "EmptyStatement",
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.ExpressionStatement>({
+registerNode<T.ExpressionStatement>({
   type: "ExpressionStatement",
   traverse: ["expression"],
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.BlockStatement>({
+registerNode<T.BlockStatement>({
   type: "BlockStatement",
   traverse: ["body"],
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.ReturnStatement>({
+registerNode<T.ReturnStatement>({
   type: "ReturnStatement",
   traverse: ["argument"],
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.ThrowStatement>({
+registerNode<T.ThrowStatement>({
   type: "ThrowStatement",
   traverse: ["argument"],
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.BreakStatement>({
+registerNode<T.BreakStatement>({
   type: "BreakStatement",
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.ContinueStatement>({
+registerNode<T.ContinueStatement>({
   type: "ContinueStatement",
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.WhileStatement>({
+registerNode<T.WhileStatement>({
   type: "WhileStatement",
   traverse: ["test", "body"],
   categories: [NodeCategory.Statement, NodeCategory.Loop]
 })
 
-registerNode<N.ForStatement>({
+registerNode<T.ForStatement>({
   type: "ForStatement",
   traverse: ["init", "test", "update", "body"],
   categories: [NodeCategory.Statement, NodeCategory.Loop]
 })
 
-registerNode<N.ForInStatement>({
+registerNode<T.ForInStatement>({
   type: "ForInStatement",
   traverse: ["var", "iterable", "body"],
   categories: [NodeCategory.Statement, NodeCategory.Loop]
 })
 
-registerNode<N.IfStatement>({
+registerNode<T.IfStatement>({
   type: "IfStatement",
   traverse: ["test", "consequent", "alternate"],
   categories: [NodeCategory.Statement]
 })
 
-registerNode<N.FunctionDeclaration>({
+registerNode<T.FunctionDeclaration>({
   type: "FunctionDeclaration",
   traverse: ["name", "parameters", "body"],
   categories: [
@@ -289,60 +338,60 @@ registerNode<N.FunctionDeclaration>({
   ]
 })
 
-registerNode<N.PackageDeclaration>({
+registerNode<T.PackageDeclaration>({
   type: "PackageDeclaration",
   traverse: ["name"],
   categories: [NodeCategory.Declaration]
 })
 
-registerNode<N.ImportDeclaration>({
+registerNode<T.ImportDeclaration>({
   type: "ImportDeclaration",
   traverse: ["from", "specifiers"],
   categories: [NodeCategory.Declaration]
 })
 
-registerNode<N.ImportSpecifier>({
+registerNode<T.ImportSpecifier>({
   type: "ImportSpecifier",
   traverse: ["imported", "semver", "as"]
 })
 
-registerNode<N.VariableDeclaration>({
+registerNode<T.VariableDeclaration>({
   type: "VariableDeclaration",
   traverse: ["annotations", "declarations"],
   categories: [NodeCategory.Declaration, NodeCategory.Annotated]
 })
 
-registerNode<N.VariableDeclarator>({
+registerNode<T.VariableDeclarator>({
   type: "VariableDeclarator",
   traverse: ["id", "init"]
 })
 
-registerNode<N.EmptyPattern>({
+registerNode<T.EmptyPattern>({
   type: "EmptyPattern"
 })
 
-registerNode<N.AssignmentPattern>({
+registerNode<T.AssignmentPattern>({
   type: "AssignmentPattern",
   traverse: ["left", "right"]
 })
 
-registerNode<N.ObjectPattern>({
+registerNode<T.ObjectPattern>({
   type: "ObjectPattern",
   traverse: ["properties"]
 })
 
-registerNode<N.RestElement>({
+registerNode<T.RestElement>({
   type: "RestElement",
   traverse: ["argument"]
 })
 
-const { is: isSpreadElement } = registerNode<N.SpreadElement>({
+const { is: isSpreadElement } = registerNode<T.SpreadElement>({
   type: "SpreadElement",
   traverse: ["argument"]
 })
 export { isSpreadElement }
 
-const { is: isArrayPattern } = registerNode<N.ArrayPattern>({
+const { is: isArrayPattern } = registerNode<T.ArrayPattern>({
   type: "ArrayPattern",
   traverse: ["elements"]
 })
