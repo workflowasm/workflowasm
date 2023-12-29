@@ -1,5 +1,5 @@
 import type { Position } from "../position.js"
-import type * as N from "../../ast.js"
+import type * as N from "../../ast/types.js"
 import { Tokenizer } from "./tokenizer.js"
 import { Errors } from "../error.js"
 

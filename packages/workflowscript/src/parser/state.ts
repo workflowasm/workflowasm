@@ -1,5 +1,5 @@
-import type * as N from "../ast.ts"
-import type { CommentWhitespace, TokenType } from "../ast.ts"
+import type * as N from "../ast/types.js"
+import type { CommentWhitespace, TokenType } from "../ast/types.js"
 import { Position } from "./position.js"
 
 import { tt, ct, TokContext } from "./token-types.js"

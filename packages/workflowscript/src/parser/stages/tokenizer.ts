@@ -8,8 +8,8 @@ import {
   buildPosition
 } from "../position.js"
 import CommentsParser from "./comments.js"
-import type * as N from "../../ast.js"
-import { type CommentWhitespace } from "../../ast.js"
+import type * as N from "../../ast/types.js"
+import { type CommentWhitespace } from "../../ast/types.js"
 import * as charCodes from "charcodes"
 import { isIdentifierStart, isIdentifierChar } from "../identifier.js"
 import {

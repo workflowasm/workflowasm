@@ -15,7 +15,7 @@ import type {
   Incomplete,
   Annotation,
   EmptyPattern
-} from "../../ast.js"
+} from "../../ast/types.js"
 import { type Position, type Pos } from "../position.js"
 import { isReservedWord } from "../keyword.js"
 import { NodeParser } from "./node.js"

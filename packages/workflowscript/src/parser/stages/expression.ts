@@ -29,8 +29,8 @@ import {
   tt,
   type TokenType
 } from "../token-types.js"
-import * as N from "../../ast.js"
-import { type Incomplete } from "../../ast.js"
+import * as N from "../../ast/types.js"
+import { type Incomplete } from "../../ast/types.js"
 import LValParser from "./lval.js"
 import { isKeyword, isReservedWord, canBeReservedWord } from "../keyword.js"
 import {
@@ -298,7 +298,7 @@ export default abstract class ExpressionParser extends LValParser {
     minPrec: number
   ): N.Expression {
     const op = this.state.type
-    if (tokenIsOperator(op) && !this.match(tt._in)) {
+    if (tokenIsOperator(op)) {
       let prec = tokenOperatorPrecedence(op)
       if (prec > minPrec) {
         const node = this.startNodeAt<N.BinaryExpression>(leftStartLoc)

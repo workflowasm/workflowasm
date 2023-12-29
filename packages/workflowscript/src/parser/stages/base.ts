@@ -2,7 +2,7 @@ import type { Options } from "../options.js"
 import type State from "../state.js"
 import { Position, buildPosition } from "../position.js"
 import { type ParseErrorConstructor, ParseError } from "../error.js"
-import { type Node, type Incomplete } from "../../ast.js"
+import { type Node, type Incomplete } from "../../ast/types.js"
 
 type RaiseProperties<DetailsT> = {
   at: Position | Node | Incomplete<Node>
@@ -11,9 +11,6 @@ type RaiseProperties<DetailsT> = {
 export class BaseParser {
   declare options: Options
   filename?: string
-  // Names of exports store. `default` is stored as a name for both
-  // `export default foo;` and `export { foo as default };`.
-  exportedIdentifiers = new Set<string>()
 
   // Initialized by Tokenizer
   declare state: State

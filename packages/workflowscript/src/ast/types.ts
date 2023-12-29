@@ -1,9 +1,17 @@
-import { ParseError } from "./parser/error.js"
-import type { SourceLocation } from "./parser/position.js"
+// Pure-type description of the WorkflowScript AST.
+//
+// When modifying this file, be sure to make the corresponding changes
+// to `node.ts`, which contains the runtime information about the node
+// types.
+import { ParseError } from "../parser/error.js"
+import type { SourceLocation } from "../parser/position.js"
 
 //////////////// Tokens
 export type TokenType = number
 
+/**
+ * Basic properties of a token. (Tokens are not AST nodes.)
+ */
 export interface Token {
   type: TokenType
   value: unknown
@@ -13,6 +21,10 @@ export interface Token {
 }
 
 //////////////// Comments
+/**
+ * Basic properties of a comment. (Comments are not AST nodes, but
+ * are instead attached to their closest related AST node.)
+ */
 interface CommentBase {
   type: "CommentBlock" | "CommentLine"
   value: string
@@ -31,7 +43,9 @@ export interface CommentLine extends CommentBase {
 
 export type Comment = CommentBlock | CommentLine
 
-// A whitespace containing comments
+/**
+ * A whitespace between nodes that contains comments.
+ */
 export interface CommentWhitespace {
   start: number
   end: number
@@ -87,6 +101,9 @@ export interface ParserOutput {
 }
 
 //////////////// Unified node type
+/**
+ * Any fully-typed node in a WorkflowScript AST.
+ */
 export type Node =
   | Container
   | Statement
@@ -271,15 +288,15 @@ export interface ObjectExpression extends NodeBase {
   properties: (ObjectProperty | SpreadElement)[]
 }
 
-export interface ObjectProperty extends NodeBase {
+export interface ObjectProperty extends NodeBase, AnnotatedNode {
   type: "ObjectProperty"
   key: Expression
   value: Expression | Pattern
   computed: boolean
   shorthand: boolean
-  annotations?: Annotation[]
 }
 
+// XXX: eliminate this
 export interface ParenthesizedExpression extends NodeBase {
   type: "ParenthesizedExpression"
   expression: Expression
@@ -417,7 +434,7 @@ export interface FunctionDeclaration extends FunctionBase, AnnotatedNode {
 
 export interface PackageDeclaration extends NodeBase {
   type: "PackageDeclaration"
-  name: Identifier
+  name: DotPath
 }
 
 export interface ImportDeclaration extends NodeBase {
@@ -435,7 +452,7 @@ export interface ImportSpecifier extends NodeBase {
 
 export type VariableDeclarationKind = "let" | "const"
 
-export interface VariableDeclaration extends NodeBase {
+export interface VariableDeclaration extends NodeBase, AnnotatedNode {
   type: "VariableDeclaration"
   declarations: VariableDeclarator[]
   kind: VariableDeclarationKind
@@ -457,14 +474,16 @@ export type NonAssignmentPattern =
 
 export type Pattern = NonAssignmentPattern | AssignmentPattern
 
-export interface PatternBase extends NodeBase {
-  annotations?: Annotation[]
-}
+export interface PatternBase extends NodeBase, AnnotatedNode {}
 
 export interface EmptyPattern extends PatternBase {
   type: "EmptyPattern"
 }
 
+/**
+ * Pattern representing a defaulted value, as in a function parameter
+ * or destructured element.
+ */
 export interface AssignmentPattern extends PatternBase {
   type: "AssignmentPattern"
   left: Pattern
@@ -488,6 +507,7 @@ export interface SpreadElement extends NodeBase {
 
 export interface ArrayPattern extends PatternBase {
   type: "ArrayPattern"
+  // XXX: why is undefined allowed here?
   elements: (Pattern | undefined)[]
 }
 

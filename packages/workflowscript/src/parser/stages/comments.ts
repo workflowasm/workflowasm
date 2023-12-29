@@ -4,7 +4,7 @@ import type {
   Identifier,
   Incomplete,
   CommentWhitespace
-} from "../../ast.js"
+} from "../../ast/types.js"
 import { BaseParser } from "./base.js"
 import * as charCodes from "charcodes"
 

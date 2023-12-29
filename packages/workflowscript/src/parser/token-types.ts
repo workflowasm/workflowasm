@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { type TokenType } from "../ast.js"
+import { type TokenType } from "../ast/types.js"
 
 export { type TokenType }
 
@@ -192,16 +192,15 @@ export const tt = {
     binop: 11,
     rightAssociative: true
   }),
+  // end: isBinop
 
   // Keywords
   // Don't forget to update packages/babel-helper-validator-identifier/src/keyword.js
   // when new keywords are added
   // start: isLiteralPropertyName
   // start: isKeyword
-  _in: createKeyword("in", { beforeExpr, binop: 7 }),
-  _instanceof: createKeyword("instanceof", { beforeExpr, binop: 7 }),
-  // end: isBinop
   _break: createKeyword("break"),
+  _in: createKeyword("in", { beforeExpr }),
   _case: createKeyword("case", { beforeExpr }),
   _catch: createKeyword("catch"),
   _continue: createKeyword("continue"),
@@ -239,13 +238,7 @@ export const tt = {
   _await: createKeywordLike("await", { startsExpr }),
   _defer: createKeywordLike("defer", { startsExpr }),
   _from: createKeywordLike("from", { startsExpr }),
-  _get: createKeywordLike("get", { startsExpr }),
   _let: createKeywordLike("let", { startsExpr }),
-  _meta: createKeywordLike("meta", { startsExpr }),
-  _of: createKeywordLike("of", { startsExpr }),
-  _sent: createKeywordLike("sent", { startsExpr }),
-  _set: createKeywordLike("set", { startsExpr }),
-  _source: createKeywordLike("source", { startsExpr }),
   _static: createKeywordLike("static", { startsExpr }),
   _using: createKeywordLike("using", { startsExpr }),
   _yield: createKeywordLike("yield", { startsExpr }),
@@ -287,11 +280,11 @@ export function tokenKeywordOrIdentifierIsKeyword(token: TokenType): boolean {
 }
 
 export function tokenIsKeywordOrIdentifier(token: TokenType): boolean {
-  return token >= tt._in && token <= tt.name
+  return token >= tt._break && token <= tt.name
 }
 
 export function tokenIsLiteralPropertyName(token: TokenType): boolean {
-  return token >= tt._in && token <= tt.float
+  return token >= tt._break && token <= tt.float
 }
 
 export function tokenComesBeforeExpression(token: TokenType): boolean {
@@ -311,11 +304,11 @@ export function tokenIsLoop(token: TokenType): boolean {
 }
 
 export function tokenIsKeyword(token: TokenType): boolean {
-  return token >= tt._in && token <= tt._while
+  return token >= tt._break && token <= tt._while
 }
 
 export function tokenIsOperator(token: TokenType): boolean {
-  return token >= tt.nullishCoalescing && token <= tt._instanceof
+  return token >= tt.nullishCoalescing && token <= tt.exponent
 }
 
 export function tokenIsPostfix(_token: TokenType): boolean {

@@ -6,7 +6,7 @@ import {
 } from "../token-types.js"
 import { ScopeParser } from "./scope.js"
 import type State from "../state.js"
-import type { Node, ObjectProperty } from "../../ast.js"
+import type { Node, ObjectProperty } from "../../ast/types.js"
 import { lineBreak, skipWhiteSpaceToLineBreak } from "../utils.js"
 import { isIdentifierChar } from "../identifier.js"
 import { ClassScopeHandler } from "./scope.js"
@@ -261,9 +261,6 @@ export default abstract class UtilParser extends ScopeParser {
     const oldLabels = this.state.labels
     this.state.labels = []
 
-    const oldExportedIdentifiers = this.exportedIdentifiers
-    this.exportedIdentifiers = new Set()
-
     // initialize scopes
     const oldScope = this.scope
     const ScopeHandler = this.getScopeHandler()
@@ -275,7 +272,6 @@ export default abstract class UtilParser extends ScopeParser {
     return () => {
       // Revert state
       this.state.labels = oldLabels
-      this.exportedIdentifiers = oldExportedIdentifiers
 
       // Revert scopes
       this.scope = oldScope

@@ -1,5 +1,5 @@
-import * as N from "../../ast.js"
-import { type Incomplete } from "../../ast.js"
+import * as N from "../../ast/types.js"
+import { type Incomplete } from "../../ast/types.js"
 import { tokenIsIdentifier, tt, type TokenType } from "../token-types.js"
 import ExpressionParser from "./expression.js"
 import { Errors } from "../error.js"
@@ -682,17 +682,11 @@ export default abstract class StatementParser extends ExpressionParser {
           : this.parseMaybeAssignAllowIn()
 
       if (decl.init == null && !allowMissingInitializer) {
-        if (
-          decl.id.type !== "Identifier" &&
-          !(isFor && (this.match(tt._in) || this.isContextual(tt._of)))
-        ) {
+        if (decl.id.type !== "Identifier" && !(isFor && this.match(tt._in))) {
           this.raise(Errors.DeclarationMissingInitializer, {
             at: this.state.lastTokEndLoc ?? ZeroPosition
           })
-        } else if (
-          kind === "const" &&
-          !(this.match(tt._in) || this.isContextual(tt._of))
-        ) {
+        } else if (kind === "const" && !this.match(tt._in)) {
           this.raise(Errors.DeclarationMissingInitializer, {
             at: this.state.lastTokEndLoc ?? ZeroPosition
           })

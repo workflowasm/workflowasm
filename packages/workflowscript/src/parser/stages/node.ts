@@ -6,7 +6,7 @@ import type {
   NodeBase,
   Incomplete,
   Identifier
-} from "../../ast.js"
+} from "../../ast/types.js"
 
 // Start an AST node, attaching a start offset.
 

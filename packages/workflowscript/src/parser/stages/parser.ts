@@ -1,5 +1,5 @@
 import type { Options } from "../options.js"
-import type * as N from "../../ast.js"
+import type * as N from "../../ast/types.js"
 import { getOptions } from "../options.js"
 import StatementParser from "./statement.js"
 import { ScopeHandler } from "./scope.js"
