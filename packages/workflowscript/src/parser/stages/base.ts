@@ -1,6 +1,6 @@
 import type { Options } from "../options.js"
 import type State from "../state.js"
-import { Position, buildPosition } from "../position.js"
+import { Position, ZeroPosition, buildPosition } from "../position.js"
 import { type ParseErrorConstructor, ParseError } from "../error.js"
 import { type Node, type Incomplete } from "../../ast/types.js"
 
@@ -37,7 +37,7 @@ export class BaseParser {
     raiseProperties: RaiseProperties<DetailsT>
   ): ParseError<DetailsT> {
     const { at, ...details } = raiseProperties
-    const loc = at instanceof Position ? at : at.loc.start
+    const loc = at instanceof Position ? at : at.loc?.start ?? ZeroPosition
     const error = new errorClass({ loc, details: details as DetailsT })
 
     if (!this.options.errorRecovery) throw error
@@ -57,7 +57,7 @@ export class BaseParser {
     raiseProperties: RaiseProperties<DetailsT>
   ): ParseError<DetailsT> | never {
     const { at, ...details } = raiseProperties
-    const loc = at instanceof Position ? at : at.loc.start
+    const loc = at instanceof Position ? at : at.loc?.start ?? ZeroPosition
     const pos = loc.index
     const errors = this.state.errors
 

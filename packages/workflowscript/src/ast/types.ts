@@ -57,9 +57,9 @@ export interface CommentWhitespace {
 
 //////////////// Base Types
 export interface NodeBase {
-  start: number
-  end: number
-  loc: SourceLocation
+  start?: number
+  end?: number
+  loc?: SourceLocation
   range?: [number, number]
   leadingComments?: Comment[]
   trailingComments?: Comment[]
@@ -122,7 +122,23 @@ export type LooseNode =
   | DotPath
   | ImportSpecifier
 
-export type Incomplete<NodeT extends Node> = Omit<NodeT, "type">
+/**
+ * An incomplete node of eventual type `NodeT` produced by the parser. */
+export type Incomplete<NodeT extends Node> = Omit<NodeT, "type"> & {
+  start: number
+  end: number
+  loc: SourceLocation
+}
+
+/**
+ * A complete node of type `NodeT` produced by the parser
+ * including source loc info.
+ */
+export type Complete<NodeT extends Node> = NodeT & {
+  start: number
+  end: number
+  loc: SourceLocation
+}
 
 //////////////// Top-Level Containers
 export interface File extends NodeBase, ParserOutput {

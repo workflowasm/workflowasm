@@ -4,6 +4,7 @@ import type {
   Node as NodeType,
   NodeBase,
   Incomplete,
+  Complete,
   Identifier
 } from "../../ast/types.js"
 import { Node } from "../../ast/node.js"
@@ -52,7 +53,10 @@ export abstract class NodeParser extends UtilParser {
   }
 
   /** Finish an AST node, adding `type` and `end` properties. */
-  finishNode<T extends NodeType>(node: Incomplete<T>, type: T["type"]): T {
+  finishNode<T extends NodeType>(
+    node: Incomplete<T>,
+    type: T["type"]
+  ): Complete<T> {
     return this.finishNodeAt(
       node,
       type,
@@ -65,14 +69,14 @@ export abstract class NodeParser extends UtilParser {
     node: Incomplete<T>,
     type: T["type"],
     endLoc: Position
-  ): T {
+  ): Complete<T> {
     if (process.env.NODE_ENV !== "production" && node.end > 0) {
       throw new Error(
         "Do not call finishNode*() twice on the same node." +
           " Instead use resetEndLocation() or change type directly."
       )
     }
-    const nodeAsT = node as T
+    const nodeAsT = node as Complete<T>
     nodeAsT.type = type
     nodeAsT.end = endLoc.index
     nodeAsT.loc.end = endLoc
@@ -83,7 +87,7 @@ export abstract class NodeParser extends UtilParser {
 
   resetStartLocation(node: NodeBase, startLoc: Position): void {
     node.start = startLoc.index
-    node.loc.start = startLoc
+    if (node.loc) node.loc.start = startLoc
     if (this.options.ranges && !!node.range) node.range[0] = startLoc.index
   }
 
@@ -92,7 +96,7 @@ export abstract class NodeParser extends UtilParser {
     endLoc: Position = this.state.lastTokEndLoc ?? ZeroPosition
   ): void {
     node.end = endLoc.index
-    node.loc.end = endLoc
+    if (node.loc) node.loc.end = endLoc
     if (this.options.ranges && !!node.range) node.range[1] = endLoc.index
   }
 
@@ -100,6 +104,6 @@ export abstract class NodeParser extends UtilParser {
    * Reset the start location of node to the start location of locationNode
    */
   resetStartLocationFromNode(node: NodeBase, locationNode: NodeBase): void {
-    this.resetStartLocation(node, locationNode.loc.start)
+    if (locationNode.loc) this.resetStartLocation(node, locationNode.loc.start)
   }
 }

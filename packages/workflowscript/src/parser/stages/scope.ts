@@ -1,4 +1,4 @@
-import type { Position } from "../position.js"
+import { ZeroPosition, type Position } from "../position.js"
 import type * as N from "../../ast/types.js"
 import { Tokenizer } from "./tokenizer.js"
 import { Errors } from "../error.js"
@@ -262,7 +262,7 @@ export class ScopeHandler<IScope extends Scope = Scope> {
       // can overwrite this behavior.
       !topLevelScope.functions.has(name)
     ) {
-      this.undefinedExports.set(name, id.loc.start)
+      this.undefinedExports.set(name, id.loc?.start ?? ZeroPosition)
     }
   }
 

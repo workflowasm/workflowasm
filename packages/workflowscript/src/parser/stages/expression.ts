@@ -30,7 +30,7 @@ import {
   type TokenType
 } from "../token-types.js"
 import * as N from "../../ast/types.js"
-import { type Incomplete } from "../../ast/types.js"
+import { type Incomplete, type Complete } from "../../ast/types.js"
 import LValParser from "./lval.js"
 import { isKeyword, isReservedWord, canBeReservedWord } from "../keyword.js"
 import {
@@ -64,14 +64,20 @@ export default abstract class ExpressionParser extends LValParser {
     node: Incomplete<T>,
     statement?: number
   ): T
-  abstract parseFunctionParams(node: N.Function, isConstructor?: boolean): void
+  abstract parseFunctionParams(
+    node: Incomplete<N.Function>,
+    isConstructor?: boolean
+  ): void
   abstract parseBlockOrModuleBlockBody(
     body: N.Statement[],
     topLevel: boolean,
     end: TokenType,
     afterBlockParse?: () => void
   ): void
-  abstract parseProgram(program: N.Program, end: TokenType): N.Program
+  abstract parseProgram(
+    program: Incomplete<N.Program>,
+    end: TokenType
+  ): Complete<N.Program>
 
   // XXX: unneeded
   shouldExitDescending(
@@ -906,7 +912,10 @@ export default abstract class ExpressionParser extends LValParser {
       ) as N.SequenceExpression
       val.expressions = exprList
       // finish node at current location so it can pick up comments after `)`
-      this.finishNode(val, "SequenceExpression")
+      this.finishNode(
+        val as Incomplete<N.SequenceExpression>,
+        "SequenceExpression"
+      )
       this.resetEndLocation(val, innerEndLoc)
     } else {
       val = exprList[0]
@@ -1130,10 +1139,17 @@ export default abstract class ExpressionParser extends LValParser {
       //   IdentifierReference
       //   CoverInitializedName
       // Note: `{ eval } = {}` will be checked in `checkLVal` later.
-      this.checkReservedWord(prop.key.name, prop.key.loc.start, true)
+      this.checkReservedWord(
+        prop.key.name,
+        prop.key.loc?.start ?? ZeroPosition,
+        true
+      )
 
       if (isPattern) {
-        prop.value = this.parseMaybeDefault(startLoc, cloneIdentifier(prop.key))
+        prop.value = this.parseMaybeDefault(
+          startLoc,
+          cloneIdentifier(prop.key) as Complete<N.Identifier>
+        )
       } else if (this.match(tt.eq)) {
         const shorthandAssignLoc = this.state.startLoc
         if (refExpressionErrors != null) {
@@ -1145,7 +1161,10 @@ export default abstract class ExpressionParser extends LValParser {
             at: shorthandAssignLoc
           })
         }
-        prop.value = this.parseMaybeDefault(startLoc, cloneIdentifier(prop.key))
+        prop.value = this.parseMaybeDefault(
+          startLoc,
+          cloneIdentifier(prop.key) as Complete<N.Identifier>
+        )
       } else {
         prop.value = cloneIdentifier(prop.key)
       }
@@ -1364,7 +1383,7 @@ export default abstract class ExpressionParser extends LValParser {
   // This shouldn't be used to parse the keywords of meta properties, since they
   // are not identifiers and cannot contain escape sequences.
 
-  parseIdentifier(liberal?: boolean): N.Identifier {
+  parseIdentifier(liberal?: boolean): Complete<N.Identifier> {
     const node = this.startNode<N.Identifier>()
     const name = this.parseIdentifierName(liberal)
 
@@ -1372,9 +1391,9 @@ export default abstract class ExpressionParser extends LValParser {
   }
 
   createIdentifier(
-    node: Omit<N.Identifier, "type">,
+    node: Incomplete<N.Identifier>,
     name: string
-  ): N.Identifier {
+  ): Complete<N.Identifier> {
     node.name = name
     node.loc.identifierName = name
 

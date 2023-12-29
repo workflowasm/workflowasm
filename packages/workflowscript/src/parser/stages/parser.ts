@@ -1,5 +1,5 @@
 import type { Options } from "../options.js"
-import type * as N from "../../ast/types.js"
+import * as N from "../../ast/types.js"
 import { getOptions } from "../options.js"
 import StatementParser from "./statement.js"
 import { ScopeHandler } from "./scope.js"
@@ -22,14 +22,14 @@ export default class Parser extends StatementParser {
     return ScopeHandler
   }
 
-  parse(): N.File {
+  parse(): N.Complete<N.File> {
     this.enterInitialScopes()
-    const file = this.startNode() as N.File
-    const program = this.startNode() as N.Program
+    const file = this.startNode<N.File>()
+    const program = this.startNode<N.Program>()
     this.nextToken()
     file.errors = undefined
-    this.parseTopLevel(file, program)
-    file.errors = this.state.errors
-    return file
+    const completeFile = this.parseTopLevel(file, program)
+    completeFile.errors = this.state.errors
+    return completeFile
   }
 }

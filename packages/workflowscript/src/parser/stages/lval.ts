@@ -14,9 +14,10 @@ import type {
   ArrayPattern,
   Incomplete,
   Annotation,
-  EmptyPattern
+  EmptyPattern,
+  Complete
 } from "../../ast/types.js"
-import { type Position, type Pos } from "../position.js"
+import { type Position, type Pos, ZeroPosition } from "../position.js"
 import { isReservedWord } from "../keyword.js"
 import { NodeParser } from "./node.js"
 import { BindingFlag } from "./scope.js"
@@ -40,7 +41,7 @@ export enum ParseBindingListFlags {
 
 export default abstract class LValParser extends NodeParser {
   // Forward-declaration: defined in expression.js
-  abstract parseIdentifier(liberal?: boolean): Identifier
+  abstract parseIdentifier(liberal?: boolean): Complete<Identifier>
   abstract parseMaybeAssign(
     refExpressionErrors?: ExpressionErrors | null,
     // eslint-disable-next-line @typescript-eslint/ban-types
@@ -59,7 +60,7 @@ export default abstract class LValParser extends NodeParser {
     close: TokenType,
     isPattern: boolean,
     refExpressionErrors?: ExpressionErrors
-  ): T
+  ): Complete<T>
   abstract parseObjPropValue(
     prop: unknown,
     startLoc: Position | null,
@@ -329,7 +330,10 @@ export default abstract class LValParser extends NodeParser {
   }
 
   // Parses lvalue (assignable) atom.
-  parseBindingAtom(): ArrayPattern | ObjectPattern | Identifier {
+  parseBindingAtom():
+    | Complete<ArrayPattern>
+    | Complete<ObjectPattern>
+    | Complete<Identifier> {
     // https://tc39.es/ecma262/#prod-BindingPattern
     switch (this.state.type) {
       case tt.bracketL: {
@@ -347,7 +351,7 @@ export default abstract class LValParser extends NodeParser {
         // False positive here.
         //
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        return this.parseObjectLike(tt.braceR, true) as ObjectPattern
+        return this.parseObjectLike(tt.braceR, true) as Complete<ObjectPattern>
     }
 
     // https://tc39.es/ecma262/#prod-BindingIdentifier
@@ -445,8 +449,8 @@ export default abstract class LValParser extends NodeParser {
   // https://tc39.es/ecma262/#prod-BindingElement
   parseMaybeDefault(
     startLoc?: Position | null,
-    left?: Pattern | null
-  ): Pattern {
+    left?: Complete<Pattern> | null
+  ): Complete<Pattern> {
     startLoc ??= this.state.startLoc
     left = left ?? this.parseBindingAtom()
     if (!this.eat(tt.eq)) return left
@@ -660,7 +664,11 @@ export default abstract class LValParser extends NodeParser {
   }
 
   declareNameFromIdentifier(identifier: Identifier, binding: BindingFlag) {
-    this.scope.declareName(identifier.name, binding, identifier.loc.start)
+    this.scope.declareName(
+      identifier.name,
+      binding,
+      identifier.loc?.start ?? ZeroPosition
+    )
   }
 
   checkToRestConversion(node: Node, allowPattern: boolean): void {

@@ -2,7 +2,6 @@ import type {
   Comment,
   Node,
   Identifier,
-  Incomplete,
   CommentWhitespace
 } from "../../ast/types.js"
 import { BaseParser } from "./base.js"
@@ -13,7 +12,10 @@ import * as charCodes from "charcodes"
  * trailingComments. New comments will be placed before old comments
  * because the commentStack is enumerated reversely.
  */
-function setTrailingComments(node: Incomplete<Node>, comments: Array<Comment>) {
+function setTrailingComments(
+  node: { trailingComments?: Comment[] },
+  comments: Array<Comment>
+) {
   if (node.trailingComments === undefined) {
     node.trailingComments = comments
   } else {
@@ -26,7 +28,10 @@ function setTrailingComments(node: Incomplete<Node>, comments: Array<Comment>) {
  * leadingComments. New comments will be placed before old comments
  * because the commentStack is enumerated reversely.
  */
-function setLeadingComments(node: Incomplete<Node>, comments: Array<Comment>) {
+function setLeadingComments(
+  node: { leadingComments?: Comment[] },
+  comments: Array<Comment>
+) {
   if (node.leadingComments === undefined) {
     node.leadingComments = comments
   } else {
@@ -40,7 +45,7 @@ function setLeadingComments(node: Incomplete<Node>, comments: Array<Comment>) {
  * because the commentStack is enumerated reversely.
  */
 export function setInnerComments(
-  node: Incomplete<Node>,
+  node: { innerComments?: Comment[] },
   comments?: Array<Comment>
 ) {
   if (node.innerComments === undefined) {
@@ -56,7 +61,7 @@ export function setInnerComments(
  * to node's innerComments
  */
 function adjustInnerComments(
-  node: Incomplete<Node>,
+  node: Node,
   elements: Array<Node | undefined>,
   commentWS: CommentWhitespace
 ) {
@@ -65,7 +70,11 @@ function adjustInnerComments(
   while (lastElement == null && i > 0) {
     lastElement = elements[--i]
   }
-  if (lastElement == null || lastElement.start > commentWS.start) {
+  if (
+    lastElement == null ||
+    lastElement.start === undefined ||
+    lastElement.start > commentWS.start
+  ) {
     setInnerComments(node, commentWS.comments)
   } else {
     setTrailingComments(lastElement, commentWS.comments)
@@ -95,6 +104,7 @@ export default class CommentsParser extends BaseParser {
     }
 
     const { start: nodeStart } = node
+    if (nodeStart === undefined) return
     // invariant: for all 0 <= j <= i, let c = commentStack[j], c must satisfy c.end < node.end
     for (; i >= 0; i--) {
       const commentWS = commentStack[i]

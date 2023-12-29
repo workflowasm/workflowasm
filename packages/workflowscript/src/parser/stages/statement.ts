@@ -1,5 +1,5 @@
 import * as N from "../../ast/types.js"
-import { type Incomplete } from "../../ast/types.js"
+import { type Incomplete, type Complete } from "../../ast/types.js"
 import { tokenIsIdentifier, tt, type TokenType } from "../token-types.js"
 import ExpressionParser from "./expression.js"
 import { Errors } from "../error.js"
@@ -38,7 +38,10 @@ export default abstract class StatementParser extends ExpressionParser {
   // `program` argument.  If present, the statements will be appended
   // to its body instead of creating a new node.
 
-  parseTopLevel(file: N.File, program: N.Program): N.File {
+  parseTopLevel(
+    file: Incomplete<N.File>,
+    program: Incomplete<N.Program>
+  ): Complete<N.File> {
     file.program = this.parseProgram(program)
     file.comments = this.state.comments
 
@@ -52,10 +55,10 @@ export default abstract class StatementParser extends ExpressionParser {
   parseProgram(
     program: Incomplete<N.Program>,
     end: TokenType = tt.eof
-  ): N.Program {
+  ): Complete<N.Program> {
     this.parseBlockBody(program, true, end)
 
-    let finishedProgram: N.Program
+    let finishedProgram: Complete<N.Program>
     if (end === tt.eof) {
       // finish at eof for top level program
       finishedProgram = this.finishNode(program, "Program")
@@ -321,7 +324,7 @@ export default abstract class StatementParser extends ExpressionParser {
     this.next()
 
     const startLoc = this.state.startLoc
-    let expr: N.Expression
+    let expr: Complete<N.Expression>
 
     expr = this.parseIdentifier(false)
 
@@ -338,7 +341,9 @@ export default abstract class StatementParser extends ExpressionParser {
     return this.finishNode(node, "Annotation")
   }
 
-  parseMaybeAnnotationArguments(expr: N.Expression): N.Expression {
+  parseMaybeAnnotationArguments(
+    expr: Complete<N.Expression>
+  ): Complete<N.Expression> {
     if (this.eat(tt.parenL)) {
       const node = this.startNodeAtNode<N.CallExpression>(expr)
       node.callee = expr
@@ -777,7 +782,7 @@ export default abstract class StatementParser extends ExpressionParser {
     this.scope.declareName(
       node.name.name,
       BindingFlag.TYPE_LEXICAL,
-      node.name.loc.start
+      node.name.loc?.start ?? ZeroPosition
     )
   }
 
