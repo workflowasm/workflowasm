@@ -7,9 +7,18 @@ import "workflowasm/lang/v1/value.proto";
 
 // A single function segment in an assembly
 message Function {
-   // The `Instruction`s comprising the function.
+  // The `Instruction`s comprising the function code.
   repeated Instruction instructions = 1;
 
   // The function's constant table, used with `OP_PUSHK`
   repeated Value constants = 2;
+
+  // The function's local name within its package
+  string name = 3;
+
+  // The function's semver specifier
+  string semver = 4;
+
+  // Is the function exported from the package?
+  bool is_exported = 5;
 }

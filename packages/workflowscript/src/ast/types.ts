@@ -96,8 +96,8 @@ export interface AnnotatedNode extends NodeBase {
 
 export interface ParserOutput {
   comments: Comment[]
-  errors?: ParseError<unknown>[]
-  tokens?: (Token | Comment)[]
+  errors?: Array<ParseError<unknown>>
+  tokens?: Array<Token | Comment>
 }
 
 //////////////// Unified node type
@@ -301,7 +301,7 @@ export interface ArrayExpression extends NodeBase {
 
 export interface ObjectExpression extends NodeBase {
   type: "ObjectExpression"
-  properties: (ObjectProperty | SpreadElement)[]
+  properties: Array<ObjectProperty | SpreadElement>
 }
 
 export interface ObjectProperty extends NodeBase, AnnotatedNode {
@@ -508,7 +508,7 @@ export interface AssignmentPattern extends PatternBase {
 
 export interface ObjectPattern extends PatternBase {
   type: "ObjectPattern"
-  properties: (ObjectProperty | RestElement)[]
+  properties: Array<ObjectProperty | RestElement>
 }
 
 export interface RestElement extends PatternBase {
@@ -524,7 +524,7 @@ export interface SpreadElement extends NodeBase {
 export interface ArrayPattern extends PatternBase {
   type: "ArrayPattern"
   // XXX: why is undefined allowed here?
-  elements: (Pattern | undefined)[]
+  elements: Array<Pattern | undefined>
 }
 
 /////// Misc

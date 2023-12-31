@@ -42,8 +42,9 @@
   },
   "dependencies": {
     "@workflowasm/protocols-js": "^0.1.0",
-    "@workflowasm/vm": "^0.1.0",
     "charcodes": "0.2.0",
-    "@types/charcodes": "0.2.2"
+    "@types/charcodes": "0.2.2",
+    "@babel/code-frame": "^7.23.5",
+    "@types/babel__code-frame": "^7.0.6"
   }
 }

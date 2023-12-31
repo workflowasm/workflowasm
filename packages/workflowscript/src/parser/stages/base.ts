@@ -38,7 +38,11 @@ export class BaseParser {
   ): ParseError<DetailsT> {
     const { at, ...details } = raiseProperties
     const loc = at instanceof Position ? at : at.loc?.start ?? ZeroPosition
-    const error = new errorClass({ loc, details: details as DetailsT })
+    const error = new errorClass({
+      source: { input: this.input, filename: this.filename },
+      loc,
+      details: details as DetailsT
+    })
 
     if (!this.options.errorRecovery) throw error
     if (!this.isLookahead) this.state.errors.push(error)

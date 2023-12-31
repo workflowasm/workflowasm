@@ -7,3 +7,5 @@ export { Parser }
 export { AST }
 
 export * from "./ast/traverse.js"
+
+export * from "./compiler/compiler.js"

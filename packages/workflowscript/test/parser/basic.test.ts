@@ -16,5 +16,15 @@ fn main() {}
 `
   )
   const rst = p.parse()
-  console.dir(rst, { depth: 50 })
+  //console.dir(rst, { depth: 50 })
+})
+
+test("parse error", () => {
+  const p = new Parser(
+    undefined,
+    `
+import your mom
+`
+  )
+  p.parse()
 })

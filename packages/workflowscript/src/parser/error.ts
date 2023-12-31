@@ -1,5 +1,14 @@
-import { Position } from "./position.js"
 import { toNodeDescription } from "./utils.js"
+import {
+  type WfsErrorConstructorArgs,
+  WfsError,
+  type WfsErrorConstructor
+} from "../errors.js"
+
+export type ParseErrorConstructor<
+  ResultT extends WfsError<DetailsT>,
+  DetailsT
+> = WfsErrorConstructor<ResultT, DetailsT>
 
 // XXX: this is here to avoid a dep cycle
 export type LValAncestor =
@@ -23,37 +32,15 @@ export type LValAncestor =
     }
 
 export enum ParseErrorCode {
-  UNKNOWN = 0,
-  VARIABLE_REDECLARATION = 1
+  UNKNOWN = 0
 }
 
-export interface ParseErrorConstructor<
-  ResultT extends ParseError<DetailsT>,
-  DetailsT
-> {
-  new (arg: ParseErrorConstructorArgs<DetailsT>): ResultT
-}
-
-type ParseErrorConstructorArgs<DetailsT> = {
-  message?: string
-  loc: Position
-  details?: DetailsT
-}
-
-export class ParseError<DetailsT> extends Error {
+export class ParseError<DetailsT> extends WfsError<DetailsT> {
   code: ParseErrorCode = ParseErrorCode.UNKNOWN
-  loc: Position
-  details?: DetailsT
-
-  constructor(args: ParseErrorConstructorArgs<DetailsT>) {
-    super(args.message ?? "Parse error")
-    this.loc = args.loc
-    this.details = args.details
-  }
 }
 
 class VarRedeclaration extends ParseError<{ identifierName: string }> {
-  constructor(args: ParseErrorConstructorArgs<{ identifierName: string }>) {
+  constructor(args: WfsErrorConstructorArgs<{ identifierName: string }>) {
     super(
       Object.assign({}, args, {
         message: `Variable redeclaration of ${args.details?.identifierName}`
@@ -63,7 +50,7 @@ class VarRedeclaration extends ParseError<{ identifierName: string }> {
 }
 
 class InvalidOrUnexpectedToken extends ParseError<{ unexpected: string }> {
-  constructor(args: ParseErrorConstructorArgs<{ unexpected: string }>) {
+  constructor(args: WfsErrorConstructorArgs<{ unexpected: string }>) {
     super(
       Object.assign({}, args, {
         message: `Invalid or unexpected token: ${args.details?.unexpected}`
@@ -73,7 +60,7 @@ class InvalidOrUnexpectedToken extends ParseError<{ unexpected: string }> {
 }
 
 class InvalidDigit extends ParseError<{ radix: number }> {
-  constructor(args: ParseErrorConstructorArgs<{ radix: number }>) {
+  constructor(args: WfsErrorConstructorArgs<{ radix: number }>) {
     super(
       Object.assign({}, args, {
         message: `Invalid digit for radix ${args.details?.radix}`
@@ -83,7 +70,7 @@ class InvalidDigit extends ParseError<{ radix: number }> {
 }
 
 class InvalidEscapedReservedWord extends ParseError<{ reservedWord: string }> {
-  constructor(args: ParseErrorConstructorArgs<{ reservedWord: string }>) {
+  constructor(args: WfsErrorConstructorArgs<{ reservedWord: string }>) {
     super(
       Object.assign({}, args, {
         message: `Invalid escaped reserved word ${args.details?.reservedWord}`
@@ -93,7 +80,7 @@ class InvalidEscapedReservedWord extends ParseError<{ reservedWord: string }> {
 }
 
 class IllegalReservedWord extends ParseError<{ reservedWord: string }> {
-  constructor(args: ParseErrorConstructorArgs<{ reservedWord: string }>) {
+  constructor(args: WfsErrorConstructorArgs<{ reservedWord: string }>) {
     super(
       Object.assign({}, args, {
         message: `Illegal use of reserved word '${args.details?.reservedWord}'`
@@ -115,7 +102,7 @@ function genericParseError<T>(message: GenericParseErrorEntry<T>) {
   }
 
   return class extends ParseError<T> {
-    constructor(args: ParseErrorConstructorArgs<T>) {
+    constructor(args: WfsErrorConstructorArgs<T>) {
       super(
         Object.assign({}, args, {
           message: messageGenerator(args.details as T)

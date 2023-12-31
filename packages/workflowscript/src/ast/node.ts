@@ -3,36 +3,41 @@ import { SourceLocation, type Position } from "../parser/position.js"
 import type * as T from "./types.js"
 
 ////////// Classy nodes
+/**
+ * Concrete implementation of the abstract TypeScript AST `Node`
+ * as a JavaScript class.
+ */
 export class Node implements T.NodeBase {
   type: string = ""
   declare start: number
   declare end: number
   declare loc: SourceLocation
   declare range: [number, number]
-  declare leadingComments: Array<T.Comment>
-  declare trailingComments: Array<T.Comment>
-  declare innerComments: Array<T.Comment>
+  declare leadingComments: T.Comment[]
+  declare trailingComments: T.Comment[]
+  declare innerComments: T.Comment[]
   declare extra: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any
+    [key: string]: unknown
   }
 
   constructor(
-    pos: number,
-    loc: Position,
+    pos?: number,
+    loc?: Position,
     ranges: boolean = false,
     filename?: string
   ) {
-    this.start = pos
-    this.end = 0
-    this.loc = new SourceLocation(loc)
-    if (ranges) this.range = [pos, 0]
+    if (pos !== undefined && loc !== undefined) {
+      this.start = pos
+      this.end = 0
+      this.loc = new SourceLocation(loc)
+      if (ranges) this.range = [pos, 0]
+    }
     if (filename !== undefined) this.loc.filename = filename
   }
 
   __clone(): Node {
     const newNode = new Node(this.start, this.loc.start)
-    const keys = Object.keys(this) as (keyof Node)[]
+    const keys = Object.keys(this) as Array<keyof Node>
     for (let i = 0, length = keys.length; i < length; i++) {
       const key = keys[i]
       // Do not clone comments that are already attached to the node
@@ -109,17 +114,33 @@ export function getMetadata(t: T.Node["type"]): NodeMetadata {
   return nodes[t]
 }
 
+export type MatchersT = {
+  [NodeType in T.Node as `is${NodeType["type"]}`]: (
+    n: T.Node | null | undefined
+  ) => n is NodeType
+}
+
+export const matchers = {} as MatchersT
+
+export type ConstructorsT = {
+  [NodeType in T.Node as `${NodeType["type"]}`]: (
+    def: Omit<NodeType, "type">
+  ) => NodeType
+}
+
+export const constructors = {} as ConstructorsT
+
 //////////////// Metadata registration
 // Type-check registrations as they're being registered
 interface StrictNodeRegistration<NodeT extends T.Node> {
   type: NodeT["type"]
-  traverse?: (keyof NodeT)[]
+  traverse?: Array<keyof NodeT>
   categories?: NodeCategory[]
 }
 
 function registerNode<NodeT extends T.Node>(
   registration: NodeMetadata & StrictNodeRegistration<NodeT>
-): { is: (n: T.Node) => n is NodeT } {
+): void {
   const reg = registration as NodeMetadata
   nodes[reg.type] = reg
   reg.categories = reg.categories
@@ -131,18 +152,33 @@ function registerNode<NodeT extends T.Node>(
   }
 
   const ist = reg.type
-  return {
-    is(n: T.Node | null | undefined): n is NodeT {
-      return n?.type === ist
-    }
+
+  // Conjure matcher
+  // @ts-expect-error This is a logically-sound assignment to the
+  // matcher of the corresponding node type.
+  matchers[`is${reg.type}`] = function (
+    n: T.Node | null | undefined
+  ): n is NodeT {
+    return n?.type === ist
+  }
+
+  // Conjure constructor
+  // @ts-expect-error This is a logically-sound assignment
+  // to the constructor of the node type.
+  constructors[ist] = function (def: Omit<NodeT, "type">): NodeT {
+    const newNode = new Node() as unknown as NodeT
+    Object.assign(newNode, def)
+    newNode.type = ist
+    return newNode
   }
 }
-
-const { is: isFile } = registerNode<T.File>({
+///////////////////////////// NODES //////////////////////////////////
+// These definitions specify runtime metadata for AST nodes
+// corresponding to those defined in `types.ts`.
+registerNode<T.File>({
   type: "File",
   traverse: ["program"]
 })
-export { isFile }
 
 registerNode<T.Program>({
   type: "Program",
@@ -385,14 +421,12 @@ registerNode<T.RestElement>({
   traverse: ["argument"]
 })
 
-const { is: isSpreadElement } = registerNode<T.SpreadElement>({
+registerNode<T.SpreadElement>({
   type: "SpreadElement",
   traverse: ["argument"]
 })
-export { isSpreadElement }
 
-const { is: isArrayPattern } = registerNode<T.ArrayPattern>({
+registerNode<T.ArrayPattern>({
   type: "ArrayPattern",
   traverse: ["elements"]
 })
-export { isArrayPattern }

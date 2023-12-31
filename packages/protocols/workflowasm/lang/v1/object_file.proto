@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package workflowasm.lang.v1;
+
+import "workflowasm/lang/v1/function.proto";
+
+// The output of a compilation of a single module
+// file.
+message ObjectFile {
+  // Package to which the functions in this module
+  // belong.
+  string package = 1;
+
+  // The functions defined in this object module
+  map<string, Function> functions = 4;
+}

@@ -15,7 +15,7 @@ import { Value } from "./value_pb.js";
  */
 export class Function extends Message<Function> {
   /**
-   * The `Instruction`s comprising the function.
+   * The `Instruction`s comprising the function code.
    *
    * @generated from field: repeated workflowasm.lang.v1.Instruction instructions = 1;
    */
@@ -28,6 +28,27 @@ export class Function extends Message<Function> {
    */
   constants: Value[] = [];
 
+  /**
+   * The function's local name within its package
+   *
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * The function's semver specifier
+   *
+   * @generated from field: string semver = 4;
+   */
+  semver = "";
+
+  /**
+   * Is the function exported from the package?
+   *
+   * @generated from field: bool is_exported = 5;
+   */
+  isExported = false;
+
   constructor(data?: PartialMessage<Function>) {
     super();
     proto3.util.initPartial(data, this);
@@ -38,6 +59,9 @@ export class Function extends Message<Function> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instructions", kind: "message", T: Instruction, repeated: true },
     { no: 2, name: "constants", kind: "message", T: Value, repeated: true },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "semver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "is_exported", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Function {

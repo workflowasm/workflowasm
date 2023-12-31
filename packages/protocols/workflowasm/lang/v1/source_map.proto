@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package workflowasm.lang.v1;
+
+// Source mapping information associated with a 
+// compiled function, for debugging and inspection
+// purposes.
+message SourceMap {
+  // THe file name this source map maps into. Must
+  // correspond with the `filename` of the appropriate
+  // `object_file`.
+  string filename = 1;
+}
