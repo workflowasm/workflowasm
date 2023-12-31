@@ -1,4 +1,4 @@
-import { TypedPath, type Path, Visitor } from "../ast/traverse.js"
+import { type Path, Visitor, createRootPath } from "../ast/traverse.js"
 import type * as T from "../ast/types.js"
 import { ObjectFile, Function } from "@workflowasm/protocols-js"
 import { matchers as M } from "../ast/node.js"
@@ -8,12 +8,16 @@ import {
   findAnnotations,
   getStringLiteralAnnotationArgument
 } from "../ast/util.js"
+import { ScopeVisitor, TypedScopedPath } from "./scope.js"
 
 const CompilationError = makeErrorClass(
   (details: { message: string }) => details.message
 )
 
-export class Compiler extends Visitor<Path> {
+class TypedCompilerPath<PathT> extends TypedScopedPath<PathT> {}
+type CompilerPath = TypedCompilerPath<CompilerPath>
+
+export class Compiler extends Visitor<CompilerPath> {
   /** The parsed input program */
   program: T.Program
 
@@ -34,18 +38,27 @@ export class Compiler extends Visitor<Path> {
   }
 
   compile(): ObjectFile {
-    this.visit(TypedPath.root<Path>(this.program, this.source))
+    const rootPath = createRootPath(
+      TypedCompilerPath<CompilerPath>,
+      this.program,
+      this.source
+    )
+    // Perform initial scoping pass
+    const scoper = new ScopeVisitor()
+    scoper.visit(rootPath)
+    // Perform general compile pass
+    this.visit(rootPath)
     return new ObjectFile({})
   }
 
-  override enter(path: Path): void {
+  override enter(path: CompilerPath): void {
     const { node } = path
     if (M.isFunctionDeclaration(node)) {
       this.enterFunctionDeclaration(path, node)
     }
   }
 
-  override exit(_path: Path): void {
+  override exit(_path: CompilerPath): void {
     // const { node } = path
   }
 

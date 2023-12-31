@@ -32,3 +32,8 @@ export type ChildClassOf<
   BaseT extends abstract new (...args: any) => any,
   A extends unknown[] = any[]
 > = Omit<BaseT, "constructor"> & Class<InstanceType<BaseT>, A>
+
+/**
+ * Type of a general key-value hash object.
+ */
+export type GenericObject = { [key: string]: unknown }

@@ -1,15 +1,14 @@
 import { type Node } from "./types.js"
 import { type NodeMetadata, getMetadata } from "./node.js"
-import { type Constructor, type SourceCode } from "../types.js"
+import {
+  type GenericObject,
+  type Constructor,
+  type SourceCode
+} from "../types.js"
 import { WfsError, type WfsErrorConstructor } from "../errors.js"
 import { ZeroPosition } from "../parser/position.js"
 
-export class Scope {
-  parent?: Scope
-}
-
 type PathEntry = [key: string, index: number | null]
-type GenericObject = { [key: string]: unknown }
 
 /**
  * `Path`s are the unit of traversal in the AST visitor pattern.
@@ -55,15 +54,6 @@ export class TypedPath<PathT> {
     this.entries = entries
     this.parent = parent
     this.source = source
-  }
-
-  /** Start a new root path beginning at the given AST node. */
-  static root<PathT>(
-    this: Constructor<PathT>,
-    node: Node,
-    source?: SourceCode
-  ): PathT {
-    return new this(node, [], undefined, source)
   }
 
   /** Get the path of a particular child of this node. */
@@ -116,6 +106,14 @@ export class TypedPath<PathT> {
 }
 
 export type Path = TypedPath<Path>
+
+export function createRootPath<PathT>(
+  pathConstructor: Constructor<PathT>,
+  rootNode: Node,
+  source?: SourceCode
+) {
+  return new pathConstructor(rootNode, [], undefined, source)
+}
 
 /**
  * Implementation of the Visitor pattern for AST nodes. Given a root
