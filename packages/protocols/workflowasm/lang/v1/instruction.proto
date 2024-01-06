@@ -19,7 +19,8 @@ enum Opcode {
   // Stack signature: `[1]`
   OP_PUSHINT = 2;
 
-  // Push the depth of the stack (as an integer) to the stack.
+  // Push the depth of the stack (as an int64) to the stack. (Note that
+  // the result left by this opcode is not counted in the stack depth.)
   //
   // Stack signature: `[1]`
   OP_PUSHDEPTH = 3;
@@ -94,44 +95,27 @@ enum Opcode {
   // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < i1`
   OP_ROLL = 9;
 
-  // Perform `env[stack(-1)] = stack(0)`. `env` is either the local or
-  // global environment depending on `i1`
-  //
-  // `i1`: If 0, use the function's local environment. If 1, use the
-  // global environment.
-  //
-  // Stack signature: `[-2]`
-  OP_SETENV = 10;
-
-  // Remove `env[stack(0)]` from the environment. If there is no such
-  // environment variable, this is a no-op. `env` is either local or
-  // global environment, depending on `i1`
-  //
-  // `i1`: If 0, use the function's local environment. If 1, use the
-  // global environment.
-  //
-  // Stack signature: `[-1]`
-  OP_CLEARENV = 11;
-
-  // Determine if `env[stack(0)]` exists. `env` is either local or global
-  // environment, depending on `i1`. Pushes boolean TRUE or FALSE.
-  //
-  // `i1`: If 0, use the function's local environment, falling back to global
-  // if the variable is unset. If 1, use the local environment with no
-  // fallback. If 2, use the global environment.
+  // Push `env[stack(0)]` to the stack. If the value doesn't exist in
+  // the environment, `null` is pushed.
   //
   // Stack signature: `[-1, 1]`
-  OP_CHECKENV = 12;
+  OP_GETVAR = 10;
 
-  // Determine if `stack(0)[stack(-1)]` exists. Pushes TRUE if so, FALSE
-  // if not.
+  // Perform `env[stack(0)] = stack(-1)`.
   //
-  // Stack signature: `[-2, 1]`
+  // Stack signature: `[-2]`
+  OP_SETVAR = 11;
+
+  // Remove `env[stack(0)]` from the environment. If there is no such
+  // environment variable, this is a no-op.
   //
-  // Throws:
-  // * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
-  // * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
-  OP_CHECKINDEX = 13;
+  // Stack signature: `[-1]`
+  OP_CLEARVAR = 12;
+
+  // Determine if `env[stack(0)]` exists. Pushes boolean TRUE or FALSE.
+  //
+  // Stack signature: `[-1, 1]`
+  OP_CHECKVAR = 13;
 
   // Computes the Boolean equivalent of the value atop the stack. If the result
   // is equivalent to `i1`,
@@ -230,7 +214,9 @@ enum Binop {
   BINOP_AND = 6;
   BINOP_OR = 7;
   BINOP_EQ = 8;
-  BINOP_LT = 10;
+  BINOP_LT = 9;
+  BINOP_LE = 10;
+  BINOP_NULLISH_COALESCE = 11;
 }
 
 // Unary operators

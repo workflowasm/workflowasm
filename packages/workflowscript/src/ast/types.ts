@@ -227,15 +227,15 @@ export type Expression =
   | CallExpression
   | MemberExpression
   | ArrayExpression
-  | ParenthesizedExpression
+  | ParenthesizedExpression // XXX: eliminate
   | ObjectExpression
   | AssignmentExpression
   | FunctionExpression
   | SequenceExpression
   | ConditionalExpression
   | TaggedTemplateExpression
-  // XXX: Spread and Rest are considered expressions because of the parser
-  // design, but they probably shouldn't be
+  // XXX: Spread and Rest are considered expressions because of the Babel
+  // parser design, but they probably shouldn't be
   | SpreadElement
   | RestElement
 
@@ -320,6 +320,8 @@ export interface ParenthesizedExpression extends NodeBase {
 
 export interface AssignmentExpression extends NodeBase {
   type: "AssignmentExpression"
+  // XXX: LHS of this should always be Pattern, but the parser does some
+  // strange things to arrive at it.
   left: Pattern | Expression
   right: Expression
 }
@@ -353,6 +355,7 @@ export type Statement =
   | ExpressionStatement
   | BlockStatement
   | ReturnStatement
+  // XXX: eliminate throw statements, they should be exprs
   | ThrowStatement
   | BreakStatement
   | ContinueStatement
@@ -360,6 +363,7 @@ export type Statement =
   | ForStatement
   | ForInStatement
   | IfStatement
+  // XXX: eliminate switch statements
   | SwitchStatement
 
 export interface EmptyStatement extends NodeBase {
@@ -463,7 +467,7 @@ export interface ImportSpecifier extends NodeBase {
   type: "ImportSpecifier"
   imported: Identifier
   semver: StringLiteral
-  as: Identifier
+  as?: Identifier
 }
 
 export type VariableDeclarationKind = "let" | "const"

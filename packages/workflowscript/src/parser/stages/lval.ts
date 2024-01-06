@@ -217,7 +217,7 @@ export default abstract class LValParser extends NodeParser {
   // Convert list of expression atoms to binding list.
 
   toAssignableList(
-    exprList: (Expression | SpreadElement | RestElement)[],
+    exprList: Array<Expression | SpreadElement | RestElement>,
     trailingCommaLoc: Position | undefined | null,
     isLHS: boolean
   ): void {
@@ -363,10 +363,10 @@ export default abstract class LValParser extends NodeParser {
     close: TokenType,
     closeCharCode: (typeof charCodes)[keyof typeof charCodes],
     flags: ParseBindingListFlags
-  ): Array<Pattern> {
+  ): Pattern[] {
     const allowEmpty = flags & ParseBindingListFlags.ALLOW_EMPTY
 
-    const elts: Array<Pattern> = []
+    const elts: Pattern[] = []
     let first = true
     while (!this.eat(close)) {
       if (first) {

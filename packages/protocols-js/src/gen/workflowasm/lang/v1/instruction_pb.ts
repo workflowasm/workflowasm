@@ -143,59 +143,42 @@ export enum Opcode {
   OP_ROLL = 9,
 
   /**
-   * Perform `env[stack(-1)] = stack(0)`. `env` is either the local or
-   * global environment depending on `i1`
-   *
-   * `i1`: If 0, use the function's local environment. If 1, use the
-   * global environment.
-   *
-   * Stack signature: `[-2]`
-   *
-   * @generated from enum value: OP_SETENV = 10;
-   */
-  OP_SETENV = 10,
-
-  /**
-   * Remove `env[stack(0)]` from the environment. If there is no such
-   * environment variable, this is a no-op. `env` is either local or
-   * global environment, depending on `i1`
-   *
-   * `i1`: If 0, use the function's local environment. If 1, use the
-   * global environment.
-   *
-   * Stack signature: `[-1]`
-   *
-   * @generated from enum value: OP_CLEARENV = 11;
-   */
-  OP_CLEARENV = 11,
-
-  /**
-   * Determine if `env[stack(0)]` exists. `env` is either local or global
-   * environment, depending on `i1`. Pushes boolean TRUE or FALSE.
-   *
-   * `i1`: If 0, use the function's local environment, falling back to global
-   * if the variable is unset. If 1, use the local environment with no
-   * fallback. If 2, use the global environment.
+   * Push `env[stack(0)]` to the stack. If the value doesn't exist in
+   * the environment, `null` is pushed.
    *
    * Stack signature: `[-1, 1]`
    *
-   * @generated from enum value: OP_CHECKENV = 12;
+   * @generated from enum value: OP_GETVAR = 10;
    */
-  OP_CHECKENV = 12,
+  OP_GETVAR = 10,
 
   /**
-   * Determine if `stack(0)[stack(-1)]` exists. Pushes TRUE if so, FALSE
-   * if not.
+   * Perform `env[stack(-1)] = stack(0)`.
    *
-   * Stack signature: `[-2, 1]`
+   * Stack signature: `[-2]`
    *
-   * Throws:
-   * * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
-   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
-   *
-   * @generated from enum value: OP_CHECKINDEX = 13;
+   * @generated from enum value: OP_SETVAR = 11;
    */
-  OP_CHECKINDEX = 13,
+  OP_SETVAR = 11,
+
+  /**
+   * Remove `env[stack(0)]` from the environment. If there is no such
+   * environment variable, this is a no-op.
+   *
+   * Stack signature: `[-1]`
+   *
+   * @generated from enum value: OP_CLEARVAR = 12;
+   */
+  OP_CLEARVAR = 12,
+
+  /**
+   * Determine if `env[stack(0)]` exists. Pushes boolean TRUE or FALSE.
+   *
+   * Stack signature: `[-1, 1]`
+   *
+   * @generated from enum value: OP_CHECKVAR = 13;
+   */
+  OP_CHECKVAR = 13,
 
   /**
    * Computes the Boolean equivalent of the value atop the stack. If the result
@@ -346,10 +329,10 @@ proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
   { no: 7, name: "OP_DUP" },
   { no: 8, name: "OP_POP" },
   { no: 9, name: "OP_ROLL" },
-  { no: 10, name: "OP_SETENV" },
-  { no: 11, name: "OP_CLEARENV" },
-  { no: 12, name: "OP_CHECKENV" },
-  { no: 13, name: "OP_CHECKINDEX" },
+  { no: 10, name: "OP_GETVAR" },
+  { no: 11, name: "OP_SETVAR" },
+  { no: 12, name: "OP_CLEARVAR" },
+  { no: 13, name: "OP_CHECKVAR" },
   { no: 14, name: "OP_TEST" },
   { no: 15, name: "OP_JMP" },
   { no: 16, name: "OP_CALL" },
@@ -417,9 +400,19 @@ export enum Binop {
   EQ = 8,
 
   /**
-   * @generated from enum value: BINOP_LT = 10;
+   * @generated from enum value: BINOP_LT = 9;
    */
-  LT = 10,
+  LT = 9,
+
+  /**
+   * @generated from enum value: BINOP_LE = 10;
+   */
+  LE = 10,
+
+  /**
+   * @generated from enum value: BINOP_NULLISH_COALESCE = 11;
+   */
+  NULLISH_COALESCE = 11,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Binop)
 proto3.util.setEnumType(Binop, "workflowasm.lang.v1.Binop", [
@@ -432,7 +425,9 @@ proto3.util.setEnumType(Binop, "workflowasm.lang.v1.Binop", [
   { no: 6, name: "BINOP_AND" },
   { no: 7, name: "BINOP_OR" },
   { no: 8, name: "BINOP_EQ" },
-  { no: 10, name: "BINOP_LT" },
+  { no: 9, name: "BINOP_LT" },
+  { no: 10, name: "BINOP_LE" },
+  { no: 11, name: "BINOP_NULLISH_COALESCE" },
 ]);
 
 /**

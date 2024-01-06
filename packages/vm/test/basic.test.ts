@@ -150,7 +150,7 @@ test("if then truthy", function () {
       constants: []
     }
   })
-  expect(state.getResult()).toEqual([[Type.INT64, BigInt(1)], undefined])
+  expect(state.getResult()).toEqual([[Type.INT64, 1n], undefined])
 })
 
 test("if then falsy", function () {
@@ -189,5 +189,5 @@ test("if then falsy", function () {
       constants: []
     }
   })
-  expect(state.getResult()).toEqual([[Type.INT64, BigInt(0)], undefined])
+  expect(state.getResult()).toEqual([[Type.INT64, 0n], undefined])
 })

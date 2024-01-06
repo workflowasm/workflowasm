@@ -1,20 +1,77 @@
-import { type Path, Visitor, createRootPath } from "../ast/traverse.js"
-import type * as T from "../ast/types.js"
-import { ObjectFile, Function } from "@workflowasm/protocols-js"
+import { Visitor, createRootPath } from "../ast/traverse.js"
+import * as T from "../ast/types.js"
+import {
+  ObjectFile,
+  Type,
+  Opcode,
+  Unop,
+  Binop
+} from "@workflowasm/protocols-js"
 import { matchers as M } from "../ast/node.js"
 import { type SourceCode } from "../types.js"
-import { makeErrorClass } from "../errors.js"
+import { Errors } from "./error.js"
 import {
   findAnnotations,
   getStringLiteralAnnotationArgument
 } from "../ast/util.js"
-import { ScopeVisitor, TypedScopedPath } from "./scope.js"
+import { BindingType, ScopeVisitor, TypedScopedPath } from "./scope.js"
+import {
+  FunctionDefinition,
+  ILOpcode,
+  il,
+  type ILProgram,
+  printIL
+} from "./il.js"
 
-const CompilationError = makeErrorClass(
-  (details: { message: string }) => details.message
-)
+const semverValid = require("semver/functions/valid")
 
-class TypedCompilerPath<PathT> extends TypedScopedPath<PathT> {}
+const binopMap: { [t in T.BinaryOperator]: Binop | null } = {
+  "+": Binop.ADD,
+  "-": Binop.SUB,
+  "*": Binop.MUL,
+  "/": Binop.DIV,
+  "%": Binop.MOD,
+  "^": Binop.POW,
+  "&&": Binop.AND,
+  "||": Binop.OR,
+  "==": Binop.EQ,
+  "!=": null, // implemented as Unop.NOT Binop.EQ
+  "<": Binop.LT,
+  "<=": Binop.LE,
+  ">": null, // Implemented as Unop.NOT Binop.LE
+  ">=": null, // Implemented as Unop.NOT Binop.LT
+  "??": Binop.NULLISH_COALESCE
+}
+
+function binopImpl(op: T.BinaryOperator): ILProgram {
+  // Native wfasm binops
+  const nativeOp = binopMap[op]
+  if (nativeOp != null) return [[ILOpcode.WFASM, Opcode.OP_BINOP, nativeOp]]
+  // Binops implemented as negations of other binops
+  if (op === "!=") {
+    return [
+      [ILOpcode.WFASM, Opcode.OP_BINOP, Binop.EQ],
+      [ILOpcode.WFASM, Opcode.OP_UNOP, Unop.NOT]
+    ]
+  } else if (op === ">") {
+    return [
+      [ILOpcode.WFASM, Opcode.OP_BINOP, Binop.LE],
+      [ILOpcode.WFASM, Opcode.OP_UNOP, Unop.NOT]
+    ]
+  } else if (op === ">=") {
+    return [
+      [ILOpcode.WFASM, Opcode.OP_BINOP, Binop.LT],
+      [ILOpcode.WFASM, Opcode.OP_UNOP, Unop.NOT]
+    ]
+  }
+  // Should be unreachable
+  throw new Error("INTERNAL COMPILER ERROR: invalid binop in binopImpl")
+}
+
+class TypedCompilerPath<PathT> extends TypedScopedPath<PathT> {
+  func?: FunctionDefinition
+  il?: ILProgram
+}
 type CompilerPath = TypedCompilerPath<CompilerPath>
 
 export class Compiler extends Visitor<CompilerPath> {
@@ -29,7 +86,7 @@ export class Compiler extends Visitor<CompilerPath> {
 
   /** Collected function definitions */
   // eslint-disable-next-line @typescript-eslint/ban-types
-  functions: { [key: string]: Function } = {}
+  functions: { [name: string]: FunctionDefinition } = {}
 
   constructor(program: T.Program, source?: SourceCode) {
     super()
@@ -46,28 +103,36 @@ export class Compiler extends Visitor<CompilerPath> {
     // Perform initial scoping pass
     const scoper = new ScopeVisitor()
     scoper.visit(rootPath)
-    // Perform general compile pass
+    // Perform IL generation pass
     this.visit(rootPath)
     return new ObjectFile({})
   }
 
+  dumpIL(): string {
+    let res = ""
+    for (const [name, def] of Object.entries(this.functions)) {
+      const prog = def.program
+      res += `${name} v'${def.semver}':\n` + (prog ? printIL(prog) : "")
+    }
+    return res
+  }
+
+  /////////////////////// ENTRY VISITORS
   override enter(path: CompilerPath): void {
     const { node } = path
+    // Inherit function scope
+    if (path.func === undefined) path.func = path.parent?.func
     if (M.isFunctionDeclaration(node)) {
       this.enterFunctionDeclaration(path, node)
     }
   }
 
-  override exit(_path: CompilerPath): void {
-    // const { node } = path
-  }
-
-  enterFunctionDeclaration(path: Path, node: T.FunctionDeclaration) {
+  enterFunctionDeclaration(path: CompilerPath, node: T.FunctionDeclaration) {
     if (M.isProgram(path.parent?.node)) {
       // Root-level function declaration
       const [versions, paths] = findAnnotations(node, path, "version")
       if (versions.length !== 1) {
-        throw path.raise(CompilationError, {
+        throw path.raise(Errors.CompilationError, {
           message:
             "Top-level function declarations must have a `@version(semver)` annotation."
         })
@@ -75,16 +140,267 @@ export class Compiler extends Visitor<CompilerPath> {
       const annotationPath = paths[0]
       const version = getStringLiteralAnnotationArgument(versions[0])
       if (version === undefined) {
-        throw annotationPath.raise(CompilationError, {
+        throw annotationPath.raise(Errors.CompilationError, {
           message: `\`@version\` must be supplied with a single string literal argument representing the semver of the function.`
         })
       }
+      if (!semverValid(version)) {
+        throw annotationPath.raise(Errors.CompilationError, {
+          message: `'${version}' is not a valid semver specifier.`
+        })
+      }
+      const fdef = new FunctionDefinition(node.name.name, version)
+      path.func = fdef
+      this.functions[node.name.name] = fdef
     } else {
       // Sub-level function declaration
       // TODO: impl
-      throw path.raise(CompilationError, {
+      throw path.raise(Errors.CompilationError, {
         message: "Sub-level function declarations are not yet supported."
       })
     }
   }
+
+  ///////////////////////// EXIT VISITORS
+  override exit(path: CompilerPath): void {
+    const { node } = path
+    //// EXPRESSIONS
+    if (M.isLiteral(node)) {
+      this.exitLiteral(path, node)
+    } else if (M.isUnaryExpression(node)) {
+      this.exitUnaryExpression(path, node)
+    } else if (M.isBinaryExpression(node)) {
+      this.exitBinaryExpression(path, node)
+    } else if (M.isCallExpression(node)) {
+      this.exitCallExpression(path, node)
+    } else if (M.isMemberExpression(node)) {
+    } else if (M.isArrayExpression(node)) {
+    } else if (M.isObjectExpression(node)) {
+    } else if (M.isAssignmentExpression(node)) {
+      this.exitAssignmentExpression(path, node)
+    } else if (M.isFunctionExpression(node)) {
+    } else if (M.isSequenceExpression(node)) {
+    } else if (M.isConditionalExpression(node)) {
+    } else if (M.isTaggedTemplateExpression(node)) {
+    }
+    ////// STATEMENTS
+    else if (M.isVariableDeclaration(node)) {
+      this.exitVariableDeclaration(path, node)
+    } else if (M.isVariableDeclarator(node)) {
+      this.exitVariableDeclarator(path, node)
+    } else if (M.isFunctionDeclaration(node)) {
+      this.exitFunctionDeclaration(path, node)
+    } else if (M.isExpressionStatement(node)) {
+      // Evaluate the expression and drop its result.
+      path.il = il(this.resolveIL(path.get("expression")), [
+        [ILOpcode.WFASM, Opcode.OP_POP, 1]
+      ])
+    } else if (M.isBlockStatement(node)) {
+      path.il = il(
+        ...path.map("body", (elt) => {
+          return elt.il ?? []
+        })
+      )
+    } else if (M.isReturnStatement(node)) {
+    } else if (M.isThrowStatement(node)) {
+      // XXX: eliminate this
+    } else if (M.isBreakStatement(node)) {
+    } else if (M.isContinueStatement(node)) {
+    } else if (M.isWhileStatement(node)) {
+    } else if (M.isForInStatement(node)) {
+    } else if (M.isIfStatement(node)) {
+      this.exitIfStatement(path, node)
+    }
+  }
+
+  exitLiteral(path: CompilerPath, node: T.Node) {
+    if (M.isBooleanLiteral(node)) {
+      path.il = [[ILOpcode.PUSHLITERAL, [Type.BOOL, node.value], null]]
+    } else if (M.isIntLiteral(node)) {
+      path.il = [[ILOpcode.PUSHLITERAL, [Type.INT64, node.value], null]]
+    } else if (M.isFloatLiteral(node)) {
+      path.il = [[ILOpcode.PUSHLITERAL, [Type.DOUBLE, node.value], null]]
+    } else if (M.isStringLiteral(node)) {
+      path.il = [[ILOpcode.PUSHLITERAL, [Type.STRING, node.value], null]]
+    } else if (M.isTemplateLiteral(node)) {
+      // TODO: impl
+      throw path.raise(Errors.CompilationError, {
+        message: "Template support NYI"
+      })
+    }
+  }
+
+  /**
+   * Resolve an expression into IL. Most of the work
+   * is done by other stages of the compiler, but in particular we must
+   * deal with `Identifier`s here.
+   */
+  resolveIL(path: CompilerPath | undefined): ILProgram {
+    if (path === undefined)
+      throw new Error(
+        "INTERNAL COMPILER ERROR: resolveAsm received nullish path."
+      )
+    // Compiled expressions should already be resolved into asm
+    if (path.il) return path.il
+    // What's left should be an `Identifier`, which we look up in
+    // scope
+    const { node } = path
+    if (M.isIdentifier(node)) {
+      const [binding, scope] = path.scope?.resolve(node.name) ?? [null, null]
+      if (binding == null) {
+        throw path.raise(Errors.UnresolvedIdentifier, { name: node.name })
+      }
+      if (binding.type === BindingType.VARIABLE) {
+        const compiledName = scope.compiledName(binding)
+        return il([
+          // push var name
+          [ILOpcode.PUSHLITERAL, [Type.STRING, compiledName], null],
+          // GETVAR
+          [ILOpcode.WFASM, Opcode.OP_GETVAR, 0]
+        ])
+      } else if (binding.type === BindingType.MODULE_FUNCTION) {
+        // Function from this compilation unit
+        return il([
+          [
+            ILOpcode.PUSHFN,
+            { package: "", name: binding.name, semver: "" },
+            null
+          ]
+        ])
+      } else if (binding.type === BindingType.IMPORTED_FUNCTION) {
+        // Function from imported package
+        return il([
+          [
+            ILOpcode.PUSHFN,
+            {
+              package: binding.importPackage ?? "(unknown package)",
+              name: binding.name,
+              semver: binding.importSemver ?? "(invalid semver)"
+            },
+            null
+          ]
+        ])
+      } else {
+        throw new Error("INTERNAL COMPILER ERROR: invalid binding type")
+      }
+    } else {
+      // Non-identifier node, shouldn't happen
+      throw path.raise(Errors.CompilationError, {
+        message: `INTERNAL COMPILER ERROR: reached a node whose IL could not be compiled. type: ${node.type}`
+      })
+    }
+  }
+
+  exitUnaryExpression(path: CompilerPath, node: T.UnaryExpression) {
+    path.il = il(this.resolveIL(path.get("argument")), [
+      [
+        ILOpcode.WFASM,
+        Opcode.OP_UNOP,
+        node.operator === "!" ? Unop.NOT : Unop.MINUS
+      ]
+    ])
+  }
+
+  exitBinaryExpression(path: CompilerPath, node: T.BinaryExpression) {
+    path.il = il(
+      this.resolveIL(path.get("left")),
+      this.resolveIL(path.get("right")),
+      binopImpl(node.operator)
+    )
+  }
+
+  exitCallExpression(path: CompilerPath, node: T.CallExpression) {
+    // TODO: modify parser and this to support `try` correctly
+    const calleeIL = this.resolveIL(path.get("callee"))
+    const argsIL: ILProgram[] = []
+    for (const [index] of node.arguments.entries()) {
+      argsIL.push(this.resolveIL(path.get("arguments", index)))
+    }
+    if (node.optional) {
+      // TODO: impl
+      // if callee is callable, call, otherwise resolve to `null`
+      throw path.raise(Errors.CompilationError, {
+        message: "Optional call expressions NYI"
+      })
+    } else {
+      path.il = il(
+        // args
+        ...argsIL,
+        // arg count
+        // XXX: Fix for SpreadElement later
+        [[ILOpcode.PUSHLITERAL, [Type.INT64, BigInt(argsIL.length)], null]],
+        // callee
+        calleeIL,
+        // CALL
+        [[ILOpcode.WFASM, Opcode.OP_CALL, 0]]
+      )
+    }
+  }
+
+  exitAssignmentExpression(path: CompilerPath, node: T.AssignmentExpression) {
+    const lhs = node.left
+    // TODO: destructuring patterns
+    if (M.isIdentifier(lhs)) {
+      path.il = il(this.resolveIL(path.get("right")), [
+        [ILOpcode.WFASM, Opcode.OP_DUP, 0],
+        [ILOpcode.PUSHLITERAL, [Type.STRING, lhs.name], null],
+        [ILOpcode.WFASM, Opcode.OP_SETVAR, 0]
+      ])
+    } else {
+      path.raise(Errors.CompilationError, {
+        message: "Support for LHS patterns other than `Identifier` is NYI."
+      })
+    }
+  }
+
+  exitVariableDeclaration(path: CompilerPath, node: T.VariableDeclaration) {
+    path.il = il(...path.map("declarations", (xpath) => xpath.il ?? []))
+  }
+
+  exitVariableDeclarator(path: CompilerPath, node: T.VariableDeclarator) {
+    const lval = node.id
+    if (M.isIdentifier(lval)) {
+      let il: ILProgram = []
+      if (node.init === undefined) {
+        il.push([ILOpcode.WFASM, Opcode.OP_PUSHNULL, 0])
+      } else {
+        il = this.resolveIL(path.get("init"))
+      }
+      il.push(
+        [ILOpcode.PUSHLITERAL, [Type.STRING, lval.name], null],
+        [ILOpcode.WFASM, Opcode.OP_SETVAR, 0]
+      )
+      path.il = il
+    } else {
+      path.raise(Errors.CompilationError, {
+        message: "Destructuring patterns NYI"
+      })
+    }
+  }
+
+  exitFunctionDeclaration(path: CompilerPath, node: T.FunctionDeclaration) {
+    // IL for function = set locals to the arguments, then run
+    // Peel args off last to first
+    const argil: ILProgram = []
+    for (let i = node.parameters.length - 1; i >= 0; i--) {
+      const param = node.parameters[i]
+      if (M.isIdentifier(param)) {
+        argil.push(
+          [ILOpcode.PUSHLITERAL, [Type.STRING, param.name], null],
+          [ILOpcode.WFASM, Opcode.OP_SETVAR, 0]
+        )
+      } else {
+        throw path.get("parameters", i)?.raise(Errors.CompilationError, {
+          message: "destructuring patterns NYI"
+        })
+      }
+    }
+    const bodyIL = this.resolveIL(path.get("body"))
+    console.dir(bodyIL, { depth: 10 })
+    path.il = il(argil, bodyIL)
+    // Commit the IL of the function to the FunctionDefinition
+    if (path.func) path.func.program = path.il
+  }
+
+  exitIfStatement(path: CompilerPath, node: T.IfStatement) {}
 }

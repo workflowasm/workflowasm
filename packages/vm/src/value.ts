@@ -1,49 +1,41 @@
-import { Message } from "@bufbuild/protobuf"
-import { Type, CallableType, Binop, Unop } from "@workflowasm/protocols-js"
+import {
+  Type,
+  CallableType,
+  Binop,
+  Unop,
+  Null,
+  type AnyVal,
+  type EnumVal,
+  type ObjectVal,
+  type MapKey,
+  type MapVal,
+  type ListVal,
+  type CallableVal,
+  type NativeCallable,
+  type FunctionCallable,
+  type ClosureCallable
+} from "@workflowasm/protocols-js"
 
-export { Type, CallableType, Binop, Unop }
-
-export type EnumValue = [type: string, value: number]
-
-export type ObjectValue = Message
-
-export type MapKey = bigint | string | boolean
-
-export type MapValue = Map<MapKey, AnyValue>
-
-export type ListValue = AnyValue[]
-
-export type RefValue = number
-
-export type NativeCallable = { type: CallableType.NATIVE; id: string }
-
-export type FunctionCallable = { type: CallableType.FUNCTION; id: string }
-
-export type ClosureCallable = {
-  type: CallableType.CLOSURE
-  id: string
-  boundArgs: AnyValue[] | undefined
-  upvalues: Map<string, RefValue> | undefined
+export {
+  Type,
+  CallableType,
+  Binop,
+  Unop,
+  type MapKey,
+  Null,
+  type NativeCallable,
+  type FunctionCallable,
+  type ClosureCallable
 }
 
-export type CallableValue = NativeCallable | FunctionCallable | ClosureCallable
-
-export type AnyValue =
-  | [Type.NULL, null]
-  | [Type.BOOL, boolean]
-  | [Type.INT64, bigint]
-  | [Type.UINT64, bigint]
-  | [Type.DOUBLE, number]
-  | [Type.STRING, string]
-  | [Type.BYTES, Uint8Array]
-  | [Type.ENUM, EnumValue]
-  | [Type.OBJECT, ObjectValue]
-  | [Type.MAP, MapValue]
-  | [Type.LIST, ListValue]
-  | [Type.TYPE, string]
-  | [Type.CALLABLE, CallableValue]
-
-export const Null: AnyValue = [Type.NULL, null]
+// TODO: fix these aliases downstream
+export type EnumValue = EnumVal
+export type ObjectValue = ObjectVal
+export type MapValue = MapVal
+export type ListValue = ListVal
+export type RefValue = number
+export type CallableValue = CallableVal
+export type AnyValue = AnyVal
 
 /**
  * When a native operation needs to return a result to the VM, this is the

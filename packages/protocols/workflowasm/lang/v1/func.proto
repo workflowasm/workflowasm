@@ -6,7 +6,7 @@ import "workflowasm/lang/v1/instruction.proto";
 import "workflowasm/lang/v1/value.proto";
 
 // A single function segment in an assembly
-message Function {
+message Func {
   // The `Instruction`s comprising the function code.
   repeated Instruction instructions = 1;
 

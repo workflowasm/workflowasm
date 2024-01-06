@@ -103,6 +103,52 @@ export class TypedPath<PathT> {
     const loc = this.node.loc?.start ?? ZeroPosition
     return new errorClass({ loc, details: args, source: this.source })
   }
+
+  /** Find an ancestor of this node matching the predicate. */
+  findAncestor(
+    predicate: (node: Node, path: PathT) => boolean
+  ): [Node, PathT] | [null, null] {
+    // Typechecking is basically disabled for this entire function.
+    // The code is all safe but the type-fu required here is bananas.
+    //
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-this-alias
+    let cur: any = this
+    do {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+      if (predicate(cur.node, cur)) return [cur.node, cur]
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      cur = cur.parent
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    } while (cur)
+    return [null, null]
+  }
+
+  /** Find an ancestor node matching the given node type. */
+  findAncestorOfType<NodeT extends Node>(
+    type: NodeT["type"]
+  ): [NodeT, PathT] | [null, null] {
+    return this.findAncestor((node) => node.type === type) as
+      | [NodeT, PathT]
+      | [null, null]
+  }
+
+  /**
+   * Execute a mapper function for each corresponding entry of the
+   * given AST node, gathering the results into an array.
+   */
+  map<EltT>(entry: string, mapper: (path: PathT) => EltT): EltT[] {
+    const val = (this.node as unknown as GenericObject)[entry]
+    if (val == null) return []
+
+    if (!Array.isArray(val)) return [mapper(this.get(entry) as PathT)]
+    else {
+      const rst: EltT[] = []
+      for (let i = 0; i < val.length; i++) {
+        rst[i] = mapper(this.get(entry, i) as PathT)
+      }
+      return rst
+    }
+  }
 }
 
 export type Path = TypedPath<Path>

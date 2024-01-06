@@ -120,7 +120,9 @@ export type MatchersT = {
   ) => n is NodeType
 }
 
-export const matchers = {} as MatchersT
+export const matchers = {} as MatchersT & {
+  [key: string]: (n: T.Node | null | undefined) => boolean
+}
 
 export type ConstructorsT = {
   [NodeType in T.Node as `${NodeType["type"]}`]: (
@@ -430,3 +432,7 @@ registerNode<T.ArrayPattern>({
   type: "ArrayPattern",
   traverse: ["elements"]
 })
+
+matchers["isLiteral"] = (node: T.Node | null | undefined): boolean => {
+  return categories[NodeCategory.Literal]?.has(node?.type ?? "") ?? false
+}

@@ -64,3 +64,19 @@ fn main() {}
   const cum = new Compiler(rst.program, { input: src })
   cum.compile()
 })
+
+test("compiler: duplicate binding", () => {
+  const src = `
+import from pak.chooie.unf { a }
+
+@version("1.0.0")
+fn main(a) {
+  const a = 3
+  const a = 4
+}
+`
+  const p = new Parser(undefined, src)
+  const rst = p.parse()
+  const cum = new Compiler(rst.program, { input: src })
+  cum.compile()
+})

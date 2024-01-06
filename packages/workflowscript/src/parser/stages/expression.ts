@@ -211,6 +211,7 @@ export default abstract class ExpressionParser extends LValParser {
 
       // TODO: disable other forms of assignment
       if (this.match(tt.eq)) {
+        // TODO: this should always generate a `Pattern` node.
         this.toAssignable(left, /* isLHS */ true)
         node.left = left
 

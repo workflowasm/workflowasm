@@ -60,7 +60,6 @@ function evaluateConstant(constant: Constant): Value {
 }
 
 function evaluateList(expr: Expr_CreateList, context: Context): Value {
-  // TODO: handle optional elements?
   const evaluatedList = expr.elements.map((element) =>
     evaluate(element, context)
   )

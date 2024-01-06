@@ -15,7 +15,7 @@ import from pak.chooie.unf { pusher }
 fn main() {}
 `
   )
-  const rst = p.parse()
+  p.parse()
   //console.dir(rst, { depth: 50 })
 })
 

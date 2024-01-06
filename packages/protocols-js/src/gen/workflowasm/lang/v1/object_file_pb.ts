@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { Function } from "./function_pb.js";
+import { Func } from "./func_pb.js";
 
 /**
  * The output of a compilation of a single module
@@ -25,9 +25,9 @@ export class ObjectFile extends Message<ObjectFile> {
   /**
    * The functions defined in this object module
    *
-   * @generated from field: map<string, workflowasm.lang.v1.Function> functions = 4;
+   * @generated from field: map<string, workflowasm.lang.v1.Func> functions = 4;
    */
-  functions: { [key: string]: Function } = {};
+  functions: { [key: string]: Func } = {};
 
   constructor(data?: PartialMessage<ObjectFile>) {
     super();
@@ -38,7 +38,7 @@ export class ObjectFile extends Message<ObjectFile> {
   static readonly typeName = "workflowasm.lang.v1.ObjectFile";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "package", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "functions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Function} },
+    { no: 4, name: "functions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Func} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ObjectFile {

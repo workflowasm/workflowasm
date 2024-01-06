@@ -2,13 +2,13 @@ import type * as T from "./types.js"
 import { matchers as M } from "./node.js"
 import { type Path } from "./traverse.js"
 
-export function findAnnotations(
+export function findAnnotations<PathT extends Path>(
   node: T.AnnotatedNode,
-  path: Path,
+  path: PathT,
   annotationType: string
-): [T.Annotation[], Path[]] {
+): [T.Annotation[], PathT[]] {
   const rst: T.Annotation[] = []
-  const rstPath: Path[] = []
+  const rstPath: PathT[] = []
   for (const [index, annotation] of (node.annotations ?? []).entries()) {
     // TODO: support other kinds of annotations...
     if (
@@ -21,7 +21,7 @@ export function findAnnotations(
         annotation.expression.callee.name === annotationType)
     ) {
       rst.push(annotation)
-      rstPath.push(path.get("annotations", index) as Path)
+      rstPath.push(path.get("annotations", index) as PathT)
     }
   }
   return [rst, rstPath]
@@ -36,4 +36,22 @@ export function getStringLiteralAnnotationArgument(
   const arg1 = expr.arguments[0]
   if (!M.isStringLiteral(arg1)) return undefined
   return arg1.value
+}
+
+/** Get all identifiers that will be bound by a given pattern */
+export function getBindingIdentifiers<PathT extends Path>(
+  node: T.Pattern,
+  path: PathT
+): Array<[T.Identifier, PathT]> {
+  if (M.isIdentifier(node)) {
+    return [[node, path]]
+  } else {
+    // XXX: support
+    return []
+  }
+}
+
+export function dotPathToString(dotPath: T.DotPath): string {
+  const names = dotPath.identifiers.map((x) => x.name)
+  return names.join(".")
 }

@@ -26,7 +26,7 @@ function frameErrorMessage(
   const { line, column } = loc
   const sl = { start: { line, column: column + 1 } }
   const frame = codeFrameColumns(source.input, sl)
-  return `${message}\n\n${source.filename ?? "(unknown file)"}@(${line},${
+  return `${message}\n\n${source.filename ?? "(unknown file)"}:${line}:${
     column + 1
   })\n\n${frame}`
 }
