@@ -5,7 +5,8 @@ import {
   Type,
   Opcode,
   Unop,
-  Binop
+  Binop,
+  dumpAsm
 } from "@workflowasm/protocols-js"
 import { matchers as M } from "../ast/node.js"
 import { type SourceCode } from "../types.js"
@@ -14,13 +15,19 @@ import {
   findAnnotations,
   getStringLiteralAnnotationArgument
 } from "../ast/util.js"
-import { BindingType, ScopeVisitor, TypedScopedPath } from "./scope.js"
+import {
+  BindingType,
+  ScopeVisitor,
+  TypedScopedPath,
+  type Scope
+} from "./scope.js"
+import { ReferenceVisitor } from "./reference.js"
 import {
   FunctionDefinition,
   ILOpcode,
   il,
   type ILProgram,
-  printIL
+  dumpIL
 } from "./il.js"
 
 const semverValid = require("semver/functions/valid")
@@ -71,6 +78,8 @@ function binopImpl(op: T.BinaryOperator): ILProgram {
 class TypedCompilerPath<PathT> extends TypedScopedPath<PathT> {
   func?: FunctionDefinition
   il?: ILProgram
+  // Scope for all paths is set by the ScopeVisitor
+  declare scope: Scope
 }
 type CompilerPath = TypedCompilerPath<CompilerPath>
 
@@ -103,8 +112,15 @@ export class Compiler extends Visitor<CompilerPath> {
     // Perform initial scoping pass
     const scoper = new ScopeVisitor()
     scoper.visit(rootPath)
+    // Perform referencing pass
+    const reffer = new ReferenceVisitor()
+    reffer.visit(rootPath)
     // Perform IL generation pass
     this.visit(rootPath)
+    // Perform ASM generation pass
+    for (const func of Object.values(this.functions)) {
+      func.compile()
+    }
     return new ObjectFile({})
   }
 
@@ -112,9 +128,21 @@ export class Compiler extends Visitor<CompilerPath> {
     let res = ""
     for (const [name, def] of Object.entries(this.functions)) {
       const prog = def.program
-      res += `${name} v'${def.semver}':\n` + (prog ? printIL(prog) : "")
+      res += `${name} v'${def.semver}':\n` + (prog ? dumpIL(prog, "  ") : "")
     }
     return res
+  }
+
+  dumpAsm(): string {
+    return Object.values(this.functions)
+      .map((fn) => {
+        return `${fn.name} v'${fn.semver}'\n${dumpAsm(
+          fn.asm ?? [],
+          fn.ktable ?? [],
+          "  "
+        )}`
+      })
+      .join("\n\n\n")
   }
 
   /////////////////////// ENTRY VISITORS
@@ -193,13 +221,18 @@ export class Compiler extends Visitor<CompilerPath> {
     } else if (M.isExpressionStatement(node)) {
       // Evaluate the expression and drop its result.
       path.il = il(this.resolveIL(path.get("expression")), [
-        [ILOpcode.WFASM, Opcode.OP_POP, 1]
+        ILOpcode.WFASM,
+        Opcode.OP_POP,
+        1
       ])
     } else if (M.isBlockStatement(node)) {
+      const isFn = M.isFunctionDeclaration(path.parent?.node)
       path.il = il(
+        !isFn ? [ILOpcode.OPEN_SCOPE, path.scope.prefix, null] : [],
         ...path.map("body", (elt) => {
           return elt.il ?? []
-        })
+        }),
+        !isFn ? [ILOpcode.CLOSE_SCOPE, path.scope.prefix, null] : []
       )
     } else if (M.isReturnStatement(node)) {
     } else if (M.isThrowStatement(node)) {
@@ -242,14 +275,15 @@ export class Compiler extends Visitor<CompilerPath> {
       )
     // Compiled expressions should already be resolved into asm
     if (path.il) return path.il
-    // What's left should be an `Identifier`, which we look up in
-    // scope
+    // What's left should be an `Identifier`, which should have been
+    // referenced by the referencing pass
     const { node } = path
     if (M.isIdentifier(node)) {
-      const [binding, scope] = path.scope?.resolve(node.name) ?? [null, null]
+      const binding = path.refersTo
       if (binding == null) {
         throw path.raise(Errors.UnresolvedIdentifier, { name: node.name })
       }
+      const scope = binding.scope
       if (binding.type === BindingType.VARIABLE) {
         const compiledName = scope.compiledName(binding)
         return il([
@@ -293,11 +327,9 @@ export class Compiler extends Visitor<CompilerPath> {
 
   exitUnaryExpression(path: CompilerPath, node: T.UnaryExpression) {
     path.il = il(this.resolveIL(path.get("argument")), [
-      [
-        ILOpcode.WFASM,
-        Opcode.OP_UNOP,
-        node.operator === "!" ? Unop.NOT : Unop.MINUS
-      ]
+      ILOpcode.WFASM,
+      Opcode.OP_UNOP,
+      node.operator === "!" ? Unop.NOT : Unop.MINUS
     ])
   }
 
@@ -328,11 +360,11 @@ export class Compiler extends Visitor<CompilerPath> {
         ...argsIL,
         // arg count
         // XXX: Fix for SpreadElement later
-        [[ILOpcode.PUSHLITERAL, [Type.INT64, BigInt(argsIL.length)], null]],
+        [ILOpcode.PUSHLITERAL, [Type.INT64, BigInt(argsIL.length)], null],
         // callee
         calleeIL,
         // CALL
-        [[ILOpcode.WFASM, Opcode.OP_CALL, 0]]
+        [ILOpcode.WFASM, Opcode.OP_CALL, 0]
       )
     }
   }
@@ -341,11 +373,12 @@ export class Compiler extends Visitor<CompilerPath> {
     const lhs = node.left
     // TODO: destructuring patterns
     if (M.isIdentifier(lhs)) {
-      path.il = il(this.resolveIL(path.get("right")), [
+      path.il = il(
+        this.resolveIL(path.get("right")),
         [ILOpcode.WFASM, Opcode.OP_DUP, 0],
         [ILOpcode.PUSHLITERAL, [Type.STRING, lhs.name], null],
         [ILOpcode.WFASM, Opcode.OP_SETVAR, 0]
-      ])
+      )
     } else {
       path.raise(Errors.CompilationError, {
         message: "Support for LHS patterns other than `Identifier` is NYI."
@@ -360,18 +393,15 @@ export class Compiler extends Visitor<CompilerPath> {
   exitVariableDeclarator(path: CompilerPath, node: T.VariableDeclarator) {
     const lval = node.id
     if (M.isIdentifier(lval)) {
-      let il: ILProgram = []
-      if (node.init === undefined) {
-        il.push([ILOpcode.WFASM, Opcode.OP_PUSHNULL, 0])
-      } else {
-        il = this.resolveIL(path.get("init"))
-      }
-      il.push(
+      path.il = il(
+        node.init === undefined
+          ? [ILOpcode.WFASM, Opcode.OP_PUSHNULL, 0]
+          : this.resolveIL(path.get("init")),
         [ILOpcode.PUSHLITERAL, [Type.STRING, lval.name], null],
         [ILOpcode.WFASM, Opcode.OP_SETVAR, 0]
       )
-      path.il = il
     } else {
+      // TODO: implement
       path.raise(Errors.CompilationError, {
         message: "Destructuring patterns NYI"
       })
@@ -396,11 +426,36 @@ export class Compiler extends Visitor<CompilerPath> {
       }
     }
     const bodyIL = this.resolveIL(path.get("body"))
-    console.dir(bodyIL, { depth: 10 })
     path.il = il(argil, bodyIL)
     // Commit the IL of the function to the FunctionDefinition
     if (path.func) path.func.program = path.il
   }
 
-  exitIfStatement(path: CompilerPath, node: T.IfStatement) {}
+  exitIfStatement(path: CompilerPath, node: T.IfStatement) {
+    const exitLabel = path.scope.createLabel()
+    const preamble = il(this.resolveIL(path.get("test")), [
+      ILOpcode.WFASM,
+      Opcode.OP_TEST,
+      1
+    ])
+    if (node.alternate) {
+      const alternateLabel = path.scope.createLabel()
+      path.il = il(
+        preamble,
+        [ILOpcode.GOTO, alternateLabel, null],
+        this.resolveIL(path.get("consequent")),
+        [ILOpcode.GOTO, exitLabel, null],
+        [ILOpcode.LABEL, alternateLabel, null],
+        this.resolveIL(path.get("alternate")),
+        [ILOpcode.LABEL, exitLabel, null]
+      )
+    } else {
+      path.il = il(
+        preamble,
+        [ILOpcode.GOTO, exitLabel, null],
+        this.resolveIL(path.get("consequent")),
+        [ILOpcode.LABEL, exitLabel, null]
+      )
+    }
+  }
 }

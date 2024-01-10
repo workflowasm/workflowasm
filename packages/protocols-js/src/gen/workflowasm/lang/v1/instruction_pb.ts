@@ -40,7 +40,8 @@ export enum Opcode {
   OP_PUSHINT = 2,
 
   /**
-   * Push the depth of the stack (as an integer) to the stack.
+   * Push the depth of the stack (as an int64) to the stack. (Note that
+   * the result left by this opcode is not counted in the stack depth.)
    *
    * Stack signature: `[1]`
    *
@@ -153,7 +154,7 @@ export enum Opcode {
   OP_GETVAR = 10,
 
   /**
-   * Perform `env[stack(-1)] = stack(0)`.
+   * Perform `env[stack(0)] = stack(-1)`.
    *
    * Stack signature: `[-2]`
    *
@@ -207,6 +208,20 @@ export enum Opcode {
   OP_JMP = 15,
 
   /**
+   * Push an environment onto the call stack.
+   *
+   * @generated from enum value: OP_ENVPUSH = 16;
+   */
+  OP_ENVPUSH = 16,
+
+  /**
+   * Pop an environment off the call stack.
+   *
+   * @generated from enum value: OP_ENVPOP = 17;
+   */
+  OP_ENVPOP = 17,
+
+  /**
    * Calls the function at `stack(0)` with `stack(-1)` arguments ranging
    * from `stack(-2)` to `stack(-2 - stack(-1) - 1)`. If the function
    * returns with success, leaves the return value on the stack.
@@ -217,9 +232,9 @@ export enum Opcode {
    *
    * Stack signature: `[-(stack(-1) + 2), (i1 == 1) ? 2 : 1]`
    *
-   * @generated from enum value: OP_CALL = 16;
+   * @generated from enum value: OP_CALL = 18;
    */
-  OP_CALL = 16,
+  OP_CALL = 18,
 
   /**
    * Return to the previous function in the call stack, with the instruction
@@ -228,36 +243,36 @@ export enum Opcode {
    *
    * Stack signature: `[-1]`
    *
-   * @generated from enum value: OP_RETURN = 18;
+   * @generated from enum value: OP_RETURN = 19;
    */
-  OP_RETURN = 18,
+  OP_RETURN = 19,
 
   /**
    * Throw an error. `stack(0)` must be a `google.rpc.Status`. The stack is
    * unwound until a frame with an error handler is reached, and control
    * is returned to that frame. 
    *
-   * @generated from enum value: OP_THROW = 19;
+   * @generated from enum value: OP_THROW = 20;
    */
-  OP_THROW = 19,
+  OP_THROW = 20,
 
   /**
    * Execute `OP(stack(0), stack(-1))`, pushing the result.
    *
    * Stack signature: `[-2, 1]`
    *
-   * @generated from enum value: OP_BINOP = 20;
+   * @generated from enum value: OP_BINOP = 21;
    */
-  OP_BINOP = 20,
+  OP_BINOP = 21,
 
   /**
    * Execute `OP(stack(0))`, pushing the result.
    *
    * Stack signature: `[-1, 1]`
    *
-   * @generated from enum value: OP_UNOP = 21;
+   * @generated from enum value: OP_UNOP = 22;
    */
-  OP_UNOP = 21,
+  OP_UNOP = 22,
 
   /**
    * Create a new message. `stack(0)` must be a string containing the fully
@@ -266,9 +281,9 @@ export enum Opcode {
    * `stack(-2 - 2*stack(-1))` is a sequence of `stack(1)` key-value pairs to
    * be assigned as the initial value of the newly constructed message.
    *
-   * @generated from enum value: OP_NEWMESSAGE = 22;
+   * @generated from enum value: OP_NEWMESSAGE = 23;
    */
-  OP_NEWMESSAGE = 22,
+  OP_NEWMESSAGE = 23,
 
   /**
    * Create a new map. `stack(0)` is the number of entries in the map.
@@ -276,18 +291,18 @@ export enum Opcode {
    * `stack(-1 - 2*stack(0))` is a sequence of `stack(0)` key-value pairs
    * to be assigned to the newly constructed map.
    *
-   * @generated from enum value: OP_NEWMAP = 23;
+   * @generated from enum value: OP_NEWMAP = 24;
    */
-  OP_NEWMAP = 23,
+  OP_NEWMAP = 24,
 
   /**
    * Create a new list. `stack(0)` is a number indicating the length of the
    * list. `stack(-1)` thru `stack(-1 - stack(0))` is a sequence of elements
    * to initialize the list.
    *
-   * @generated from enum value: OP_NEWLIST = 24;
+   * @generated from enum value: OP_NEWLIST = 25;
    */
-  OP_NEWLIST = 24,
+  OP_NEWLIST = 25,
 
   /**
    * Create a closure. `stack(0)` is a string naming the function body to be
@@ -295,9 +310,9 @@ export enum Opcode {
    * it is a map, it is treated as the captured local environment, with
    * keys naming variables and values as the initial values.
    *
-   * @generated from enum value: OP_NEWCLOSURE = 25;
+   * @generated from enum value: OP_NEWCLOSURE = 26;
    */
-  OP_NEWCLOSURE = 25,
+  OP_NEWCLOSURE = 26,
 
   /**
    * Persist the current state, which should be a "known good" state, to the
@@ -305,17 +320,17 @@ export enum Opcode {
    * Execution is always suspended until the responsible
    * controller confirms that the checkpoint has been persisted.
    *
-   * @generated from enum value: OP_CHECKPOINT = 26;
+   * @generated from enum value: OP_CHECKPOINT = 27;
    */
-  OP_CHECKPOINT = 26,
+  OP_CHECKPOINT = 27,
 
   /**
    * Execute an action (driver-defined, usually an RPC call) leaving a
    * `google.rpc.Status` object at the top of the stack 
    *
-   * @generated from enum value: OP_ACTION = 27;
+   * @generated from enum value: OP_ACTION = 28;
    */
-  OP_ACTION = 27,
+  OP_ACTION = 28,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Opcode)
 proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
@@ -335,17 +350,19 @@ proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
   { no: 13, name: "OP_CHECKVAR" },
   { no: 14, name: "OP_TEST" },
   { no: 15, name: "OP_JMP" },
-  { no: 16, name: "OP_CALL" },
-  { no: 18, name: "OP_RETURN" },
-  { no: 19, name: "OP_THROW" },
-  { no: 20, name: "OP_BINOP" },
-  { no: 21, name: "OP_UNOP" },
-  { no: 22, name: "OP_NEWMESSAGE" },
-  { no: 23, name: "OP_NEWMAP" },
-  { no: 24, name: "OP_NEWLIST" },
-  { no: 25, name: "OP_NEWCLOSURE" },
-  { no: 26, name: "OP_CHECKPOINT" },
-  { no: 27, name: "OP_ACTION" },
+  { no: 16, name: "OP_ENVPUSH" },
+  { no: 17, name: "OP_ENVPOP" },
+  { no: 18, name: "OP_CALL" },
+  { no: 19, name: "OP_RETURN" },
+  { no: 20, name: "OP_THROW" },
+  { no: 21, name: "OP_BINOP" },
+  { no: 22, name: "OP_UNOP" },
+  { no: 23, name: "OP_NEWMESSAGE" },
+  { no: 24, name: "OP_NEWMAP" },
+  { no: 25, name: "OP_NEWLIST" },
+  { no: 26, name: "OP_NEWCLOSURE" },
+  { no: 27, name: "OP_CHECKPOINT" },
+  { no: 28, name: "OP_ACTION" },
 ]);
 
 /**

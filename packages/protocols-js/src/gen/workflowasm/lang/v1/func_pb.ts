@@ -15,18 +15,11 @@ import { Value } from "./value_pb.js";
  */
 export class Func extends Message<Func> {
   /**
-   * The `Instruction`s comprising the function code.
+   * The function's ASM code and associated constants.
    *
-   * @generated from field: repeated workflowasm.lang.v1.Instruction instructions = 1;
+   * @generated from field: workflowasm.lang.v1.Func.Code code = 1;
    */
-  instructions: Instruction[] = [];
-
-  /**
-   * The function's constant table, used with `OP_PUSHK`
-   *
-   * @generated from field: repeated workflowasm.lang.v1.Value constants = 2;
-   */
-  constants: Value[] = [];
+  code?: Func_Code;
 
   /**
    * The function's local name within its package
@@ -57,8 +50,7 @@ export class Func extends Message<Func> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "workflowasm.lang.v1.Func";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instructions", kind: "message", T: Instruction, repeated: true },
-    { no: 2, name: "constants", kind: "message", T: Value, repeated: true },
+    { no: 1, name: "code", kind: "message", T: Func_Code },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "semver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "is_exported", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -78,6 +70,100 @@ export class Func extends Message<Func> {
 
   static equals(a: Func | PlainMessage<Func> | undefined, b: Func | PlainMessage<Func> | undefined): boolean {
     return proto3.util.equals(Func, a, b);
+  }
+}
+
+/**
+ * Message representing the function's code.
+ *
+ * @generated from message workflowasm.lang.v1.Func.Code
+ */
+export class Func_Code extends Message<Func_Code> {
+  /**
+   * The `Instruction`s comprising the function code.
+   *
+   * @generated from field: repeated workflowasm.lang.v1.Instruction instructions = 1;
+   */
+  instructions: Instruction[] = [];
+
+  /**
+   * The function's constant table, used with `OP_PUSHK`
+   *
+   * @generated from field: repeated workflowasm.lang.v1.Value constants = 2;
+   */
+  constants: Value[] = [];
+
+  constructor(data?: PartialMessage<Func_Code>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.lang.v1.Func.Code";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instructions", kind: "message", T: Instruction, repeated: true },
+    { no: 2, name: "constants", kind: "message", T: Value, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Func_Code {
+    return new Func_Code().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Func_Code {
+    return new Func_Code().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Func_Code {
+    return new Func_Code().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Func_Code | PlainMessage<Func_Code> | undefined, b: Func_Code | PlainMessage<Func_Code> | undefined): boolean {
+    return proto3.util.equals(Func_Code, a, b);
+  }
+}
+
+/**
+ * Function checksum. 
+ * Used to determine if the code for two functions is identical.
+ *
+ * @generated from message workflowasm.lang.v1.FuncChecksum
+ */
+export class FuncChecksum extends Message<FuncChecksum> {
+  /**
+   * The version of the checksum protocol that is being used. This
+   * should be increased any time the documented protocol changes, OR
+   * when the format of the `Instruction` or `Value` messages change
+   * meaningfully.
+   *
+   * @generated from field: int32 version = 1;
+   */
+  version = 0;
+
+  constructor(data?: PartialMessage<FuncChecksum>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.lang.v1.FuncChecksum";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "version", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FuncChecksum {
+    return new FuncChecksum().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FuncChecksum {
+    return new FuncChecksum().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FuncChecksum {
+    return new FuncChecksum().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: FuncChecksum | PlainMessage<FuncChecksum> | undefined, b: FuncChecksum | PlainMessage<FuncChecksum> | undefined): boolean {
+    return proto3.util.equals(FuncChecksum, a, b);
   }
 }
 

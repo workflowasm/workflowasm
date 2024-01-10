@@ -10,4 +10,4 @@ export * from "./ast/traverse.js"
 
 export * from "./compiler/compiler.js"
 
-export { printIL } from "./compiler/il.js"
+export { dumpIL as printIL } from "./compiler/il.js"

@@ -7,11 +7,17 @@ import "workflowasm/lang/v1/value.proto";
 
 // A single function segment in an assembly
 message Func {
-  // The `Instruction`s comprising the function code.
-  repeated Instruction instructions = 1;
+  // Message representing the function's code.
+  message Code {
+    // The `Instruction`s comprising the function code.
+    repeated Instruction instructions = 1;
 
-  // The function's constant table, used with `OP_PUSHK`
-  repeated Value constants = 2;
+    // The function's constant table, used with `OP_PUSHK`
+    repeated Value constants = 2;
+  }
+
+  // The function's ASM code and associated constants.
+  Code code = 1;
 
   // The function's local name within its package
   string name = 3;
@@ -21,4 +27,16 @@ message Func {
 
   // Is the function exported from the package?
   bool is_exported = 5;
+}
+
+// Function checksum. 
+// Used to determine if the code for two functions is identical.
+message FuncChecksum {
+  // The version of the checksum protocol that is being used. This
+  // should be increased any time the documented protocol changes, OR
+  // when the format of the `Instruction` or `Value` messages change
+  // meaningfully.
+  int32 version = 1;
+
+  // SHASUM of the Protobuf encoding of the instru
 }

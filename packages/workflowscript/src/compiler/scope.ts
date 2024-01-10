@@ -17,6 +17,7 @@ export enum BindingType {
 
 export interface Binding {
   name: string
+  scope: Scope
   kind: T.VariableDeclarationKind
   type: BindingType
   declarator:
@@ -41,21 +42,24 @@ export class Scope {
   /** Unique scope prefix relative to the nearest function scope */
   prefix: string = ""
   /** Upward-counting index for generating child prefixes */
-  childIndex: number = 1
+  childIndex: number = 0
+  /** Upward-counting index for generating unique labels */
+  labelIndex: number = 0
 
   constructor(initiator: Node, initiatorPath: ScopedPath) {
     this.initiator = initiator
     this.initiatorPath = initiatorPath
   }
 
-  bindUnique(binding: Binding) {
+  bindUnique(binding: Omit<Binding, "scope">) {
     // Don't allow double binding
     if (this.bindings[binding.name] !== undefined) {
       binding.declaratorPath.raise(DuplicateBindingError, {
         name: binding.name
       })
     }
-    this.bindings[binding.name] = binding
+    ;(binding as Binding).scope = this
+    this.bindings[binding.name] = binding as Binding
   }
 
   child(initiator: Node, initiatorPath: ScopedPath): Scope {
@@ -66,10 +70,10 @@ export class Scope {
     return ret
   }
 
-  resolve(name: string): [Binding, Scope] | [null, null] {
+  resolve(name: string): Binding | undefined {
     const localBinding = this.bindings[name]
-    if (localBinding) return [localBinding, this]
-    else return this.parent?.resolve(name) ?? [null, null]
+    if (localBinding) return localBinding
+    else return this.parent?.resolve(name) ?? undefined
   }
 
   compiledName(binding: Binding): string {
@@ -81,11 +85,21 @@ export class Scope {
       this.parent?.dump() ?? ""
     }`
   }
+
+  createLabel(): string {
+    return `${this.prefix}@@${this.labelIndex++}`
+  }
 }
 
 export class TypedScopedPath<PathT> extends TypedPath<PathT> {
   /** The tightest enclosing `Scope` that applies to this path. */
   scope?: Scope
+
+  /**
+   * If this path is an `Identifier` referencing a binding, this points
+   * to the referenced binding.
+   */
+  refersTo?: Binding
 }
 
 export type ScopedPath = TypedScopedPath<ScopedPath>
@@ -118,18 +132,14 @@ export class ScopeVisitor extends Visitor<ScopedPath> {
     } else if (M.isFunctionDeclaration(node)) {
       this.enterFunctionDeclaration(path, node)
     } else if (M.isBlockStatement(node)) {
-      this.enterBlockStatement(path, node)
+      // A block statement creates a scope if its parent isn't a function.
+      // If it is a function, the function scope is taken as equal to the
+      // block scope.
+      if (!M.isFunctionDeclaration(path.parent?.node)) {
+        path.scope = path.scope?.child(node, path)
+      }
     } else if (M.isVariableDeclarator(node)) {
       this.enterVariableDeclarator(path, node)
-    }
-  }
-
-  enterBlockStatement(path: ScopedPath, node: T.BlockStatement) {
-    // A block statement creates a scope if its parent isn't a function.
-    // If it is a function, the function scope is taken as equal to the
-    // block scope.
-    if (!M.isFunctionDeclaration(path.parent?.node)) {
-      path.scope = path.scope?.child(node, path)
     }
   }
 

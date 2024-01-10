@@ -500,10 +500,6 @@ export interface EmptyPattern extends PatternBase {
   type: "EmptyPattern"
 }
 
-/**
- * Pattern representing a defaulted value, as in a function parameter
- * or destructured element.
- */
 export interface AssignmentPattern extends PatternBase {
   type: "AssignmentPattern"
   left: Pattern
