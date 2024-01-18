@@ -29,15 +29,23 @@ export enum Opcode {
   OP_PUSHNULL = 1,
 
   /**
+   * Push a boolean value to the stack. If `i1==0`, push `false`. If
+   * `i1==1`, push `true`.
+   *
+   * @generated from enum value: OP_PUSHBOOL = 2;
+   */
+  OP_PUSHBOOL = 2,
+
+  /**
    * Push the constant integer value given by `i1` to the stack.
    *
    * `i1`: The literal constant to push.
    *
    * Stack signature: `[1]`
    *
-   * @generated from enum value: OP_PUSHINT = 2;
+   * @generated from enum value: OP_PUSHINT = 3;
    */
-  OP_PUSHINT = 2,
+  OP_PUSHINT = 3,
 
   /**
    * Push the depth of the stack (as an int64) to the stack. (Note that
@@ -45,9 +53,9 @@ export enum Opcode {
    *
    * Stack signature: `[1]`
    *
-   * @generated from enum value: OP_PUSHDEPTH = 3;
+   * @generated from enum value: OP_PUSHDEPTH = 4;
    */
-  OP_PUSHDEPTH = 3,
+  OP_PUSHDEPTH = 4,
 
   /**
    * Push a value from the function's constant table to the top of the
@@ -61,47 +69,15 @@ export enum Opcode {
    * * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in
    * the constant table.
    *
-   * @generated from enum value: OP_PUSHK = 4;
+   * @generated from enum value: OP_PUSHK = 5;
    */
-  OP_PUSHK = 4,
+  OP_PUSHK = 5,
 
   /**
-   * Compute `stack(0)[stack(-1)]` and push its value.
-   *
-   * Stack signature: `[-2, 1]`
-   *
-   * Throws:
-   * * `google.rpc.Code.INVALID_ARGUMENT` if `stack(0)` is not indexable
-   * * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in `stack(0)`
-   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 2`
-   *
-   * @generated from enum value: OP_PUSHINDEX = 5;
-   */
-  OP_PUSHINDEX = 5,
-
-  /**
-   * Compute `env[stack(0)]` and push its value. `env` is either the
-   * local or global environment depending on `i1`.
-   *
-   * `i1`: If 0, use the function's local environment, falling back to global
-   * if the variable is unset. If 1, use the local environment with no
-   * fallback. If 2, use the global environment.
-   *
-   * Stack signature: `[-1, 1]`
-   *
-   * Throws:
-   * * `google.rpc.Code.OUT_OF_RANGE` if no such index exists in `env`
-   * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < 1`
-   *
-   * @generated from enum value: OP_PUSHENV = 6;
-   */
-  OP_PUSHENV = 6,
-
-  /**
-   * Duplicate the value at `stack(i1)` and push it. For non-primitive values,
+   * Duplicate the value at `stack(-i1)` and push it. For non-primitive values,
    * this is a deep duplication. Nothing is removed from the stack.
    *
-   * `i1`: Stack index to duplicate.
+   * `i1`: Negative of stack index to duplicate.
    *
    * Stack signature: `[1]`
    *
@@ -109,9 +85,9 @@ export enum Opcode {
    * * `google.rpc.Code.INVALID_ARGUMENT` if the value cannot be duplicated.
    * * `google.rpc.Code.FAILED_PRECONDITION` if `i1` is an invalid stack index.
    *
-   * @generated from enum value: OP_DUP = 7;
+   * @generated from enum value: OP_DUP = 6;
    */
-  OP_DUP = 7,
+  OP_DUP = 6,
 
   /**
    * Pop `i1` values from the top of the stack, discarding them
@@ -124,9 +100,18 @@ export enum Opcode {
    * Throws:
    * * `google.rpc.Code.FAILED_PRECONDITION` if `depth < i1`
    *
-   * @generated from enum value: OP_POP = 8;
+   * @generated from enum value: OP_POP = 7;
    */
-  OP_POP = 8,
+  OP_POP = 7,
+
+  /**
+   * Drop the element at position `-i1` from the stack.
+   *
+   * Stack signature: `[-1]`
+   *
+   * @generated from enum value: OP_DROP = 8;
+   */
+  OP_DROP = 8,
 
   /**
    * Roll the top `i1` values on the stack. Effectively, moves the object
@@ -275,74 +260,56 @@ export enum Opcode {
   OP_UNOP = 22,
 
   /**
-   * Create a new message. `stack(0)` must be a string containing the fully
-   * qualified Protobuf type of the message to create. `stack(-1)` is the number
-   * of key-value pairs to be used in the initial construction. `stack(-2)` thru
-   * `stack(-2 - 2*stack(-1))` is a sequence of `stack(1)` key-value pairs to
-   * be assigned as the initial value of the newly constructed message.
+   * Compute `stack(-1)[stack(0)]`, where `stack(-1)` must be an indexable
+   * value (list, map, or object). If the index doesn't exist on the
+   * value, `undefined` is pushed. If the value wasn't indexable, an
+   * error is thrown.
    *
-   * @generated from enum value: OP_NEWMESSAGE = 23;
+   * Stack signature: `[-2, 1]`
+   *
+   * @generated from enum value: OP_INDEX = 23;
    */
-  OP_NEWMESSAGE = 23,
+  OP_INDEX = 23,
 
   /**
-   * Create a new map. `stack(0)` is the number of entries in the map.
-   * `stack(-1)` thru
-   * `stack(-1 - 2*stack(0))` is a sequence of `stack(0)` key-value pairs
-   * to be assigned to the newly constructed map.
+   * Compute the length of `stack(0)`, where `stack(0)` is a list. If
+   * `stack(0)` isn't a list, an error is thrown.
    *
-   * @generated from enum value: OP_NEWMAP = 24;
+   * @generated from enum value: OP_LLEN = 24;
    */
-  OP_NEWMAP = 24,
+  OP_LLEN = 24,
 
   /**
-   * Create a new list. `stack(0)` is a number indicating the length of the
-   * list. `stack(-1)` thru `stack(-1 - stack(0))` is a sequence of elements
-   * to initialize the list.
+   * Remove the first `stack(0)` elements from list `stack(-1)`, pushing
+   * result as a new list. If the list has insufficient elements, an
+   * empty list is pushed.
    *
-   * @generated from enum value: OP_NEWLIST = 25;
+   * @generated from enum value: OP_LREST = 25;
    */
-  OP_NEWLIST = 25,
+  OP_LREST = 25,
 
   /**
-   * Create a closure. `stack(0)` is a string naming the function body to be
-   * called. `stack(-1)` is either `null` or a `Map<string, value>`. If
-   * it is a map, it is treated as the captured local environment, with
-   * keys naming variables and values as the initial values.
+   * Given a number `n = stack(0)` of entries to exclude, and `stack(-1)`
+   * through `stack(-n)` containing object key names corresponding to
+   * those entries, remove each of those entries from the message or map
+   * at `stack(-n-1)`, leaving a new map on the stack representing
+   * the original object with those entries omitted.
    *
-   * @generated from enum value: OP_NEWCLOSURE = 26;
+   * @generated from enum value: OP_OREST = 26;
    */
-  OP_NEWCLOSURE = 26,
-
-  /**
-   * Persist the current state, which should be a "known good" state, to the
-   * controller responsible for this workflow run.
-   * Execution is always suspended until the responsible
-   * controller confirms that the checkpoint has been persisted.
-   *
-   * @generated from enum value: OP_CHECKPOINT = 27;
-   */
-  OP_CHECKPOINT = 27,
-
-  /**
-   * Execute an action (driver-defined, usually an RPC call) leaving a
-   * `google.rpc.Status` object at the top of the stack 
-   *
-   * @generated from enum value: OP_ACTION = 28;
-   */
-  OP_ACTION = 28,
+  OP_OREST = 26,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Opcode)
 proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
   { no: 0, name: "OP_NOOP" },
   { no: 1, name: "OP_PUSHNULL" },
-  { no: 2, name: "OP_PUSHINT" },
-  { no: 3, name: "OP_PUSHDEPTH" },
-  { no: 4, name: "OP_PUSHK" },
-  { no: 5, name: "OP_PUSHINDEX" },
-  { no: 6, name: "OP_PUSHENV" },
-  { no: 7, name: "OP_DUP" },
-  { no: 8, name: "OP_POP" },
+  { no: 2, name: "OP_PUSHBOOL" },
+  { no: 3, name: "OP_PUSHINT" },
+  { no: 4, name: "OP_PUSHDEPTH" },
+  { no: 5, name: "OP_PUSHK" },
+  { no: 6, name: "OP_DUP" },
+  { no: 7, name: "OP_POP" },
+  { no: 8, name: "OP_DROP" },
   { no: 9, name: "OP_ROLL" },
   { no: 10, name: "OP_GETVAR" },
   { no: 11, name: "OP_SETVAR" },
@@ -357,12 +324,10 @@ proto3.util.setEnumType(Opcode, "workflowasm.lang.v1.Opcode", [
   { no: 20, name: "OP_THROW" },
   { no: 21, name: "OP_BINOP" },
   { no: 22, name: "OP_UNOP" },
-  { no: 23, name: "OP_NEWMESSAGE" },
-  { no: 24, name: "OP_NEWMAP" },
-  { no: 25, name: "OP_NEWLIST" },
-  { no: 26, name: "OP_NEWCLOSURE" },
-  { no: 27, name: "OP_CHECKPOINT" },
-  { no: 28, name: "OP_ACTION" },
+  { no: 23, name: "OP_INDEX" },
+  { no: 24, name: "OP_LLEN" },
+  { no: 25, name: "OP_LREST" },
+  { no: 26, name: "OP_OREST" },
 ]);
 
 /**

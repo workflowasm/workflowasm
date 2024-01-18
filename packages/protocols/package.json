@@ -1,5 +1,6 @@
 {
   "name": "@workflowasm/protocols",
+  "version": "0.1.0",
   "description": "Protocol Buffers definitions for WorkflowASM",
   "files": [
     "dist"

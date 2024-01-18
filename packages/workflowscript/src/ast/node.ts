@@ -83,7 +83,8 @@ export enum NodeCategory {
   Literal = "Literal",
   Annotated = "Annotated",
   Loop = "Loop",
-  Function = "Function"
+  Function = "Function",
+  Pattern = "Pattern"
 }
 
 /**
@@ -118,7 +119,7 @@ export type MatchersT = {
   [NodeType in T.Node as `is${NodeType["type"]}`]: (
     n: T.Node | null | undefined
   ) => n is NodeType
-}
+} & { isPattern: (n: T.Node | null | undefined) => n is T.Pattern }
 
 export const matchers = {} as MatchersT & {
   [key: string]: (n: T.Node | null | undefined) => boolean
@@ -190,7 +191,7 @@ registerNode<T.Program>({
 
 registerNode<T.Identifier>({
   type: "Identifier",
-  categories: [NodeCategory.Expression]
+  categories: [NodeCategory.Expression, NodeCategory.Pattern]
 })
 
 registerNode<T.DotPath>({
@@ -405,22 +406,26 @@ registerNode<T.VariableDeclarator>({
 })
 
 registerNode<T.EmptyPattern>({
-  type: "EmptyPattern"
+  type: "EmptyPattern",
+  categories: [NodeCategory.Pattern]
 })
 
 registerNode<T.AssignmentPattern>({
   type: "AssignmentPattern",
-  traverse: ["left", "right"]
+  traverse: ["left", "right"],
+  categories: [NodeCategory.Pattern]
 })
 
 registerNode<T.ObjectPattern>({
   type: "ObjectPattern",
-  traverse: ["properties"]
+  traverse: ["properties"],
+  categories: [NodeCategory.Pattern]
 })
 
 registerNode<T.RestElement>({
   type: "RestElement",
-  traverse: ["argument"]
+  traverse: ["argument"],
+  categories: [NodeCategory.Pattern]
 })
 
 registerNode<T.SpreadElement>({
@@ -430,9 +435,14 @@ registerNode<T.SpreadElement>({
 
 registerNode<T.ArrayPattern>({
   type: "ArrayPattern",
-  traverse: ["elements"]
+  traverse: ["elements"],
+  categories: [NodeCategory.Pattern]
 })
 
-matchers["isLiteral"] = (node: T.Node | null | undefined): boolean => {
+matchers.isLiteral = (node: T.Node | null | undefined): boolean => {
   return categories[NodeCategory.Literal]?.has(node?.type ?? "") ?? false
+}
+
+matchers.isPattern = (node: T.Node | null | undefined): node is T.Pattern => {
+  return categories[NodeCategory.Pattern]?.has(node?.type ?? "") ?? false
 }

@@ -1,14 +1,14 @@
 // Value representations for JS VMs that are more efficient than passing
 // around oneof Protobuf objects.
 import { Message } from "@bufbuild/protobuf"
-import { Type, CallableType } from "./gen/workflowasm/lang/v1/value_pb.js"
+import { Type } from "./gen/workflowasm/lang/v1/value_pb.js"
 import { Opcode } from "./gen/workflowasm/lang/v1/instruction_pb.js"
 
 /** A typed enum value, with the Protobuf type attached. */
 export type EnumVal = [type: string, value: number]
 
 /** A typed protobuf message value. */
-export type ObjectVal = Message
+export type MessageVal = Message
 
 export type MapKey = bigint | string | boolean
 /** A map value. */
@@ -17,18 +17,18 @@ export type MapVal = Map<MapKey, AnyVal>
 /** A list value, represented as a JS array. */
 export type ListVal = AnyVal[]
 
-export type NativeCallable = { type: CallableType.NATIVE; id: string }
-export type FunctionCallable = { type: CallableType.FUNCTION; id: string }
-export type ClosureCallable = {
-  type: CallableType.CLOSURE
-  id: string
-  boundArgs: AnyVal[] | undefined
-}
 /** A callable value. */
-export type CallableVal = NativeCallable | FunctionCallable | ClosureCallable
+export type CallableVal = {
+  package: string
+  id: string
+  semver: string
+  boundArgs?: AnyVal[]
+  captures?: Map<string, AnyVal>
+}
 
 /** JS tuple representation of any WorkflowASM value. */
 export type AnyVal =
+  | [Type.UNDEFINED, undefined]
   | [Type.NULL, null]
   | [Type.BOOL, boolean]
   | [Type.INT64, bigint]
@@ -37,12 +37,13 @@ export type AnyVal =
   | [Type.STRING, string]
   | [Type.BYTES, Uint8Array]
   | [Type.ENUM, EnumVal]
-  | [Type.OBJECT, ObjectVal]
+  | [Type.MESSAGE, MessageVal]
   | [Type.MAP, MapVal]
   | [Type.LIST, ListVal]
   | [Type.TYPE, string]
   | [Type.CALLABLE, CallableVal]
 
+export const Undefined: Readonly<AnyVal> = [Type.UNDEFINED, undefined]
 export const Null: Readonly<AnyVal> = [Type.NULL, null]
 
 export type AsmInstruction = [opcode: Opcode, arg: number]
@@ -54,6 +55,8 @@ export type ConstantTable = AnyVal[]
 /** Display a readable debug representation of a value. */
 export function dumpValue(value: AnyVal): string {
   switch (value[0]) {
+    case Type.UNDEFINED:
+      return "undefined"
     case Type.NULL:
       return "null"
     case Type.BOOL:
@@ -65,7 +68,7 @@ export function dumpValue(value: AnyVal): string {
       return '"' + value[1] + '"'
     case Type.ENUM:
       return `enum(${value[1][0]}, ${value[1][1]})`
-    case Type.OBJECT:
+    case Type.MESSAGE:
       return value[1].toJsonString()
     case Type.MAP:
       return (
@@ -80,7 +83,7 @@ export function dumpValue(value: AnyVal): string {
     case Type.CALLABLE:
       return `(callable ${value[1].id})`
     case Type.BYTES:
-      return "(bytes)"
+      return `(${value[1].length} bytes)`
   }
 }
 

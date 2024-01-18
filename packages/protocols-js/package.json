@@ -39,6 +39,7 @@
     "@bufbuild/protobuf": "^1.4.2"
   },
   "devDependencies": {
-    "@bufbuild/protoc-gen-es": "^1.4.2"
+    "@bufbuild/protoc-gen-es": "^1.4.2",
+    "@workflowasm/protocols": "^0.1.0"
   }
 }

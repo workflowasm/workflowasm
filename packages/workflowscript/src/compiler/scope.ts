@@ -17,6 +17,7 @@ export enum BindingType {
 
 export interface Binding {
   name: string
+  compiledName: string
   scope: Scope
   kind: T.VariableDeclarationKind
   type: BindingType
@@ -51,7 +52,7 @@ export class Scope {
     this.initiatorPath = initiatorPath
   }
 
-  bindUnique(binding: Omit<Binding, "scope">) {
+  bindUnique(binding: Omit<Binding, "scope" | "compiledName">) {
     // Don't allow double binding
     if (this.bindings[binding.name] !== undefined) {
       binding.declaratorPath.raise(DuplicateBindingError, {
@@ -59,6 +60,7 @@ export class Scope {
       })
     }
     ;(binding as Binding).scope = this
+    ;(binding as Binding).compiledName = this.prefix + binding.name
     this.bindings[binding.name] = binding as Binding
   }
 
@@ -74,10 +76,6 @@ export class Scope {
     const localBinding = this.bindings[name]
     if (localBinding) return localBinding
     else return this.parent?.resolve(name) ?? undefined
-  }
-
-  compiledName(binding: Binding): string {
-    return this.prefix + binding.name
   }
 
   dump(indent: number = 0): string {

@@ -9,77 +9,43 @@ import "google/protobuf/struct.proto";
 //
 // NB: These must match exactly with the
 // `oneof` field numbers in the `workflowasm.lang.v1.Value` message
-// type. (Except for `TYPE_UNKNOWN` which has no corresponding values)
+// type.
 enum Type {
   TYPE_UNKNOWN = 0;
-  TYPE_NULL = 1;
-  TYPE_BOOL = 2;
-  TYPE_INT64 = 3;
-  TYPE_UINT64 = 4;
-  TYPE_DOUBLE = 5;
-  TYPE_STRING = 6;
-  TYPE_BYTES = 7;
-  TYPE_ENUM = 8;
-  TYPE_OBJECT = 9;
-  TYPE_MAP = 10;
-  TYPE_LIST = 11;
-  TYPE_TYPE = 12;
-  TYPE_CALLABLE = 13;
-}
-
-// Short integral codes for the species of callables that can be stored
-// as values within the VM.
-enum CallableType {
-  CALLABLE_TYPE_UNKNOWN = 0;
-  CALLABLE_TYPE_NATIVE = 1;
-  CALLABLE_TYPE_FUNCTION = 2;
-  CALLABLE_TYPE_CLOSURE = 3;
+  TYPE_UNDEFINED = 1;
+  TYPE_NULL = 2;
+  TYPE_BOOL = 3;
+  TYPE_INT64 = 4;
+  TYPE_UINT64 = 5;
+  TYPE_DOUBLE = 6;
+  TYPE_STRING = 7;
+  TYPE_BYTES = 8;
+  TYPE_ENUM = 9;
+  TYPE_MESSAGE = 10;
+  TYPE_MAP = 11;
+  TYPE_LIST = 12;
+  TYPE_TYPE = 13;
+  TYPE_CALLABLE = 14;
 }
 
 // A fully resolved value
 message Value {
   oneof kind {
-    // Null value.
-    google.protobuf.NullValue null_value = 1;
-
-    // Boolean value.
-    bool bool_value = 2;
-
-    // Signed integer value.
-    int64 int64_value = 3;
-
-    // Unsigned integer value.
-    uint64 uint64_value = 4;
-
-    // Floating point value.
-    double double_value = 5;
-
-    // UTF-8 string value.
-    string string_value = 6;
-
-    // Byte string value.
-    bytes bytes_value = 7;
-
-    // An enum value.
-    EnumValue enum_value = 8; 
-
+    google.protobuf.NullValue undefined_value = 1;
+    google.protobuf.NullValue null_value = 2;
+    bool bool_value = 3;
+    int64 int64_value = 4;
+    uint64 uint64_value = 5;
+    double double_value = 6;
+    string string_value = 7;
+    bytes bytes_value = 8;
+    EnumValue enum_value = 9; 
     // The proto message backing an object value.
-    google.protobuf.Any message_value = 9;
-
-    // Map value.
-    MapValue map_value = 10;
-
-    // List value.
-    ListValue list_value = 11;
-
-    // Type value.
-    string type_value = 12;
-
-    // Closure value
-    ClosureValue closure_value = 13;
-
-    // Indirect heap value
-    int32 heap_value = 14;
+    google.protobuf.Any message_value = 10;
+    MapValue map_value = 11;
+    ListValue list_value = 12;
+    string type_value = 13;
+    CallableValue callable_value = 14;
   }
 }
 
@@ -109,7 +75,7 @@ message MapValue {
   message Entry {
     // The key.
     //
-    // Must be unique with in the map.
+    // Must be unique within the map.
     // Currently only boolean, int, uint, and string values can be keys.
     Value key = 1;
 
@@ -125,11 +91,24 @@ message MapValue {
 }
 
 // A closure over a function.
-message ClosureValue {
-  // A string identifying the code for the function that was closed over
-  string function = 1;
+message CallableValue {
+  // Package where the function resides
+  string package = 1;
 
-  // State of captured closure variables, stored by id. If empty, no variables
-  // were captured by the closure.
-  string closure_id = 2;
+  // A string identifying the code for the function that was closed over
+  string id = 2;
+
+  // A string naming the semantic version of the target function
+  string semver = 3;
+
+  // Serializable description of a function closure
+  message Closure {
+    // Initial segment of bound arguments
+    repeated Value bound_args = 1;
+    // Scoped clsure entries
+    MapValue captures = 2;
+  }
+
+  // State of the callable's closure, if any
+  Closure closure = 4;
 }

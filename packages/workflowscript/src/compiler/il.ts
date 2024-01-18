@@ -3,10 +3,10 @@ import {
   Opcode,
   type AnyVal,
   Type,
-  CallableType,
   type AsmProgram,
   type ConstantTable,
-  dumpValue
+  dumpValue,
+  type MapKey
 } from "@workflowasm/protocols-js"
 
 export class FunctionDefinition {
@@ -37,7 +37,7 @@ export enum ILOpcode {
   /** No operation */
   NOOP = 0,
   /** Verbatim WorkflowASM. arg1 = WFASM opcode, arg2 = numeric oparg */
-  WFASM = 1,
+  ASM = 1,
   /** Push literal. arg1 = literal */
   PUSHLITERAL = 2,
   /** Push named function. arg1 = function specification */
@@ -49,7 +49,13 @@ export enum ILOpcode {
   /** Introduce a scope */
   OPEN_SCOPE = 6,
   /** Close a scope */
-  CLOSE_SCOPE = 7
+  CLOSE_SCOPE = 7,
+  /** Destructure an object */
+  DESTRUCTURE_OBJECT = 8,
+  /** Destructure an array */
+  DESTRUCTURE_ARRAY = 9,
+  /** Normalize function arguments */
+  NORMALIZE_ARGS = 10
 }
 
 export type ILFn = {
@@ -58,15 +64,39 @@ export type ILFn = {
   semver: string
 }
 
+export type ILDestructureObject = {
+  /** Sequence of keys to extract from the object in stack order */
+  keys: MapKey[]
+  /** If true, leave the rest of the keys on the stack as a Map. */
+  rest: boolean
+}
+
+export type ILDestructureArray = {
+  /** Number of entries to pull from front of the array */
+  n: number
+  /** If true, pushes the remaining elements as a List */
+  rest: boolean
+}
+
+export type ILNormalizeArgs = {
+  /** Number of expected args to function */
+  n: number
+  /** If true, collects excess arguments beyond `n` into an array */
+  rest: boolean
+}
+
 export type ILInstruction =
   | [ILOpcode.NOOP, null, null]
-  | [ILOpcode.WFASM, Opcode, number]
+  | [ILOpcode.ASM, Opcode, number]
   | [ILOpcode.PUSHLITERAL, AnyVal, null]
   | [ILOpcode.PUSHFN, ILFn, null]
   | [ILOpcode.LABEL, string, null]
   | [ILOpcode.GOTO, string, null]
   | [ILOpcode.OPEN_SCOPE, string, null]
   | [ILOpcode.CLOSE_SCOPE, string, null]
+  | [ILOpcode.DESTRUCTURE_OBJECT, ILDestructureObject]
+  | [ILOpcode.DESTRUCTURE_ARRAY, ILDestructureArray]
+  | [ILOpcode.NORMALIZE_ARGS, ILNormalizeArgs]
 
 export type ILProgram = ILInstruction[]
 
@@ -99,7 +129,7 @@ export function dumpInstruction(instr: ILInstruction): string {
   switch (instr[0]) {
     case ILOpcode.NOOP:
       return "[NOOP]"
-    case ILOpcode.WFASM:
+    case ILOpcode.ASM:
       return `[${Opcode[instr[1]]}, ${instr[2]}]`
     case ILOpcode.PUSHLITERAL:
       return `PUSHLITERAL ${Type[instr[1][0]]} ${dumpValue(instr[1])}`
@@ -113,6 +143,14 @@ export function dumpInstruction(instr: ILInstruction): string {
       return `OPEN_SCOPE ${instr[1]}`
     case ILOpcode.CLOSE_SCOPE:
       return `CLOSE_SCOPE ${instr[1]}`
+    case ILOpcode.DESTRUCTURE_OBJECT:
+      return `DESTRUCTURE_OBJECT ${instr[1].keys.join(",")}${
+        instr[1].rest ? ",..." : ""
+      }`
+    case ILOpcode.DESTRUCTURE_ARRAY:
+      return `DESTRUCTURE_ARRAY ${instr[1].n}${instr[1].rest ? ",..." : ""}`
+    case ILOpcode.NORMALIZE_ARGS:
+      return `NORMALIZE_ARGS ${instr[1].n}${instr[1].rest ? ",..." : ""}`
   }
 }
 
@@ -148,6 +186,8 @@ export class ILCompiler {
     if (type === Type.NULL) {
       this.asm.push([Opcode.OP_PUSHNULL, 0])
       return
+    } else if (type === Type.BOOL) {
+      this.asm.push([Opcode.OP_PUSHBOOL, val ? 1 : 0])
     } else if (type === Type.INT64 && abs(val) < Number.MAX_SAFE_INTEGER) {
       this.asm.push([Opcode.OP_PUSHINT, Number(val)])
       return
@@ -174,14 +214,29 @@ export class ILCompiler {
     this.asm.push([Opcode.OP_PUSHK, this.constants.length - 1])
   }
 
-  pushFn(fn: ILFn) {
-    const fqn = fn.package + "." + fn.name
-    if (builtinMap[fqn]) {
-      this.constants.push([
-        Type.CALLABLE,
-        { type: CallableType.NATIVE, id: builtinMap[fqn] }
-      ])
+  pushMapKey(name: MapKey) {
+    switch (typeof name) {
+      case "string":
+        this.pushLiteral([Type.STRING, name])
+        break
+      case "bigint":
+        this.pushLiteral([Type.INT64, name])
+        break
+      case "boolean":
+        this.pushLiteral([Type.BOOL, name])
+        break
+      default:
+        throw new Error(
+          "INTERNAL COMPILER ERROR: pushMapKey got unrecognized arg type"
+        )
     }
+  }
+
+  pushFn(fn: ILFn) {
+    this.constants.push([
+      Type.CALLABLE,
+      { package: fn.package, id: fn.name, semver: fn.semver }
+    ])
   }
 
   label(label: string) {
@@ -214,6 +269,44 @@ export class ILCompiler {
     }
   }
 
+  destructureArray(arg: ILDestructureArray) {
+    // Index leading segment of array
+    for (let i = 0; i < arg.n; i++) {
+      this.asm.push([Opcode.OP_DUP, i])
+      this.asm.push([Opcode.OP_PUSHINT, i])
+      this.asm.push([Opcode.OP_INDEX, 0])
+    }
+    // If there is a rest element, collect trailing segment
+    if (arg.rest) {
+      this.asm.push([Opcode.OP_DUP, arg.n])
+      this.asm.push([Opcode.OP_PUSHINT, arg.n])
+      this.asm.push([Opcode.OP_LREST, 0])
+    }
+    // Drop the original array
+    this.asm.push([Opcode.OP_DROP, arg.rest ? arg.n + 1 : arg.n])
+  }
+
+  destructureObject(arg: ILDestructureObject) {
+    const n = arg.keys.length
+    // Index named keys
+    for (const [i, k] of arg.keys.entries()) {
+      this.asm.push([Opcode.OP_DUP, i])
+      this.pushMapKey(k)
+      this.asm.push([Opcode.OP_INDEX, 0])
+    }
+    // Compose rest map if needed
+    if (arg.rest) {
+      this.asm.push([Opcode.OP_DUP, n])
+      for (const k of arg.keys) this.pushMapKey(k)
+      this.pushLiteral([Type.INT64, BigInt(n)])
+      this.asm.push([Opcode.OP_OREST, 0])
+    }
+    // Drop the original object
+    this.asm.push([Opcode.OP_DROP, arg.rest ? n + 1 : n])
+  }
+
+  normalizeArgs(arg: ILNormalizeArgs) {}
+
   compile(): { asm: AsmProgram; ktable: ConstantTable } {
     let prog = this.prog
 
@@ -228,7 +321,7 @@ export class ILCompiler {
         case ILOpcode.NOOP:
           this.asm.push([Opcode.OP_NOOP, 0])
           break
-        case ILOpcode.WFASM:
+        case ILOpcode.ASM:
           this.asm.push([instr[1], instr[2]])
           break
         case ILOpcode.PUSHLITERAL:
@@ -248,6 +341,15 @@ export class ILCompiler {
           break
         case ILOpcode.CLOSE_SCOPE:
           this.asm.push([Opcode.OP_ENVPOP, 0])
+          break
+        case ILOpcode.DESTRUCTURE_ARRAY:
+          this.destructureArray(instr[1])
+          break
+        case ILOpcode.DESTRUCTURE_OBJECT:
+          this.destructureObject(instr[1])
+          break
+        case ILOpcode.NORMALIZE_ARGS:
+          this.normalizeArgs(instr[1])
           break
       }
     }

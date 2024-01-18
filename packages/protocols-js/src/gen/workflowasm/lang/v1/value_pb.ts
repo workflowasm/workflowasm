@@ -11,7 +11,7 @@ import { Any, Message, NullValue, proto3 } from "@bufbuild/protobuf";
  *
  * NB: These must match exactly with the
  * `oneof` field numbers in the `workflowasm.lang.v1.Value` message
- * type. (Except for `TYPE_UNKNOWN` which has no corresponding values)
+ * type.
  *
  * @generated from enum workflowasm.lang.v1.Type
  */
@@ -22,121 +22,92 @@ export enum Type {
   UNKNOWN = 0,
 
   /**
-   * @generated from enum value: TYPE_NULL = 1;
+   * @generated from enum value: TYPE_UNDEFINED = 1;
    */
-  NULL = 1,
+  UNDEFINED = 1,
 
   /**
-   * @generated from enum value: TYPE_BOOL = 2;
+   * @generated from enum value: TYPE_NULL = 2;
    */
-  BOOL = 2,
+  NULL = 2,
 
   /**
-   * @generated from enum value: TYPE_INT64 = 3;
+   * @generated from enum value: TYPE_BOOL = 3;
    */
-  INT64 = 3,
+  BOOL = 3,
 
   /**
-   * @generated from enum value: TYPE_UINT64 = 4;
+   * @generated from enum value: TYPE_INT64 = 4;
    */
-  UINT64 = 4,
+  INT64 = 4,
 
   /**
-   * @generated from enum value: TYPE_DOUBLE = 5;
+   * @generated from enum value: TYPE_UINT64 = 5;
    */
-  DOUBLE = 5,
+  UINT64 = 5,
 
   /**
-   * @generated from enum value: TYPE_STRING = 6;
+   * @generated from enum value: TYPE_DOUBLE = 6;
    */
-  STRING = 6,
+  DOUBLE = 6,
 
   /**
-   * @generated from enum value: TYPE_BYTES = 7;
+   * @generated from enum value: TYPE_STRING = 7;
    */
-  BYTES = 7,
+  STRING = 7,
 
   /**
-   * @generated from enum value: TYPE_ENUM = 8;
+   * @generated from enum value: TYPE_BYTES = 8;
    */
-  ENUM = 8,
+  BYTES = 8,
 
   /**
-   * @generated from enum value: TYPE_OBJECT = 9;
+   * @generated from enum value: TYPE_ENUM = 9;
    */
-  OBJECT = 9,
+  ENUM = 9,
 
   /**
-   * @generated from enum value: TYPE_MAP = 10;
+   * @generated from enum value: TYPE_MESSAGE = 10;
    */
-  MAP = 10,
+  MESSAGE = 10,
 
   /**
-   * @generated from enum value: TYPE_LIST = 11;
+   * @generated from enum value: TYPE_MAP = 11;
    */
-  LIST = 11,
+  MAP = 11,
 
   /**
-   * @generated from enum value: TYPE_TYPE = 12;
+   * @generated from enum value: TYPE_LIST = 12;
    */
-  TYPE = 12,
+  LIST = 12,
 
   /**
-   * @generated from enum value: TYPE_CALLABLE = 13;
+   * @generated from enum value: TYPE_TYPE = 13;
    */
-  CALLABLE = 13,
+  TYPE = 13,
+
+  /**
+   * @generated from enum value: TYPE_CALLABLE = 14;
+   */
+  CALLABLE = 14,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Type)
 proto3.util.setEnumType(Type, "workflowasm.lang.v1.Type", [
   { no: 0, name: "TYPE_UNKNOWN" },
-  { no: 1, name: "TYPE_NULL" },
-  { no: 2, name: "TYPE_BOOL" },
-  { no: 3, name: "TYPE_INT64" },
-  { no: 4, name: "TYPE_UINT64" },
-  { no: 5, name: "TYPE_DOUBLE" },
-  { no: 6, name: "TYPE_STRING" },
-  { no: 7, name: "TYPE_BYTES" },
-  { no: 8, name: "TYPE_ENUM" },
-  { no: 9, name: "TYPE_OBJECT" },
-  { no: 10, name: "TYPE_MAP" },
-  { no: 11, name: "TYPE_LIST" },
-  { no: 12, name: "TYPE_TYPE" },
-  { no: 13, name: "TYPE_CALLABLE" },
-]);
-
-/**
- * Short integral codes for the species of callables that can be stored
- * as values within the VM.
- *
- * @generated from enum workflowasm.lang.v1.CallableType
- */
-export enum CallableType {
-  /**
-   * @generated from enum value: CALLABLE_TYPE_UNKNOWN = 0;
-   */
-  UNKNOWN = 0,
-
-  /**
-   * @generated from enum value: CALLABLE_TYPE_NATIVE = 1;
-   */
-  NATIVE = 1,
-
-  /**
-   * @generated from enum value: CALLABLE_TYPE_FUNCTION = 2;
-   */
-  FUNCTION = 2,
-
-  /**
-   * @generated from enum value: CALLABLE_TYPE_CLOSURE = 3;
-   */
-  CLOSURE = 3,
-}
-// Retrieve enum metadata with: proto3.getEnumType(CallableType)
-proto3.util.setEnumType(CallableType, "workflowasm.lang.v1.CallableType", [
-  { no: 0, name: "CALLABLE_TYPE_UNKNOWN" },
-  { no: 1, name: "CALLABLE_TYPE_NATIVE" },
-  { no: 2, name: "CALLABLE_TYPE_FUNCTION" },
-  { no: 3, name: "CALLABLE_TYPE_CLOSURE" },
+  { no: 1, name: "TYPE_UNDEFINED" },
+  { no: 2, name: "TYPE_NULL" },
+  { no: 3, name: "TYPE_BOOL" },
+  { no: 4, name: "TYPE_INT64" },
+  { no: 5, name: "TYPE_UINT64" },
+  { no: 6, name: "TYPE_DOUBLE" },
+  { no: 7, name: "TYPE_STRING" },
+  { no: 8, name: "TYPE_BYTES" },
+  { no: 9, name: "TYPE_ENUM" },
+  { no: 10, name: "TYPE_MESSAGE" },
+  { no: 11, name: "TYPE_MAP" },
+  { no: 12, name: "TYPE_LIST" },
+  { no: 13, name: "TYPE_TYPE" },
+  { no: 14, name: "TYPE_CALLABLE" },
 ]);
 
 /**
@@ -150,65 +121,55 @@ export class Value extends Message<Value> {
    */
   kind: {
     /**
-     * Null value.
-     *
-     * @generated from field: google.protobuf.NullValue null_value = 1;
+     * @generated from field: google.protobuf.NullValue undefined_value = 1;
+     */
+    value: NullValue;
+    case: "undefinedValue";
+  } | {
+    /**
+     * @generated from field: google.protobuf.NullValue null_value = 2;
      */
     value: NullValue;
     case: "nullValue";
   } | {
     /**
-     * Boolean value.
-     *
-     * @generated from field: bool bool_value = 2;
+     * @generated from field: bool bool_value = 3;
      */
     value: boolean;
     case: "boolValue";
   } | {
     /**
-     * Signed integer value.
-     *
-     * @generated from field: int64 int64_value = 3;
+     * @generated from field: int64 int64_value = 4;
      */
     value: bigint;
     case: "int64Value";
   } | {
     /**
-     * Unsigned integer value.
-     *
-     * @generated from field: uint64 uint64_value = 4;
+     * @generated from field: uint64 uint64_value = 5;
      */
     value: bigint;
     case: "uint64Value";
   } | {
     /**
-     * Floating point value.
-     *
-     * @generated from field: double double_value = 5;
+     * @generated from field: double double_value = 6;
      */
     value: number;
     case: "doubleValue";
   } | {
     /**
-     * UTF-8 string value.
-     *
-     * @generated from field: string string_value = 6;
+     * @generated from field: string string_value = 7;
      */
     value: string;
     case: "stringValue";
   } | {
     /**
-     * Byte string value.
-     *
-     * @generated from field: bytes bytes_value = 7;
+     * @generated from field: bytes bytes_value = 8;
      */
     value: Uint8Array;
     case: "bytesValue";
   } | {
     /**
-     * An enum value.
-     *
-     * @generated from field: workflowasm.lang.v1.EnumValue enum_value = 8;
+     * @generated from field: workflowasm.lang.v1.EnumValue enum_value = 9;
      */
     value: EnumValue;
     case: "enumValue";
@@ -216,50 +177,34 @@ export class Value extends Message<Value> {
     /**
      * The proto message backing an object value.
      *
-     * @generated from field: google.protobuf.Any message_value = 9;
+     * @generated from field: google.protobuf.Any message_value = 10;
      */
     value: Any;
     case: "messageValue";
   } | {
     /**
-     * Map value.
-     *
-     * @generated from field: workflowasm.lang.v1.MapValue map_value = 10;
+     * @generated from field: workflowasm.lang.v1.MapValue map_value = 11;
      */
     value: MapValue;
     case: "mapValue";
   } | {
     /**
-     * List value.
-     *
-     * @generated from field: workflowasm.lang.v1.ListValue list_value = 11;
+     * @generated from field: workflowasm.lang.v1.ListValue list_value = 12;
      */
     value: ListValue;
     case: "listValue";
   } | {
     /**
-     * Type value.
-     *
-     * @generated from field: string type_value = 12;
+     * @generated from field: string type_value = 13;
      */
     value: string;
     case: "typeValue";
   } | {
     /**
-     * Closure value
-     *
-     * @generated from field: workflowasm.lang.v1.ClosureValue closure_value = 13;
+     * @generated from field: workflowasm.lang.v1.CallableValue callable_value = 14;
      */
-    value: ClosureValue;
-    case: "closureValue";
-  } | {
-    /**
-     * Indirect heap value
-     *
-     * @generated from field: int32 heap_value = 14;
-     */
-    value: number;
-    case: "heapValue";
+    value: CallableValue;
+    case: "callableValue";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Value>) {
@@ -270,20 +215,20 @@ export class Value extends Message<Value> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "workflowasm.lang.v1.Value";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "null_value", kind: "enum", T: proto3.getEnumType(NullValue), oneof: "kind" },
-    { no: 2, name: "bool_value", kind: "scalar", T: 8 /* ScalarType.BOOL */, oneof: "kind" },
-    { no: 3, name: "int64_value", kind: "scalar", T: 3 /* ScalarType.INT64 */, oneof: "kind" },
-    { no: 4, name: "uint64_value", kind: "scalar", T: 4 /* ScalarType.UINT64 */, oneof: "kind" },
-    { no: 5, name: "double_value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, oneof: "kind" },
-    { no: 6, name: "string_value", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "kind" },
-    { no: 7, name: "bytes_value", kind: "scalar", T: 12 /* ScalarType.BYTES */, oneof: "kind" },
-    { no: 8, name: "enum_value", kind: "message", T: EnumValue, oneof: "kind" },
-    { no: 9, name: "message_value", kind: "message", T: Any, oneof: "kind" },
-    { no: 10, name: "map_value", kind: "message", T: MapValue, oneof: "kind" },
-    { no: 11, name: "list_value", kind: "message", T: ListValue, oneof: "kind" },
-    { no: 12, name: "type_value", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "kind" },
-    { no: 13, name: "closure_value", kind: "message", T: ClosureValue, oneof: "kind" },
-    { no: 14, name: "heap_value", kind: "scalar", T: 5 /* ScalarType.INT32 */, oneof: "kind" },
+    { no: 1, name: "undefined_value", kind: "enum", T: proto3.getEnumType(NullValue), oneof: "kind" },
+    { no: 2, name: "null_value", kind: "enum", T: proto3.getEnumType(NullValue), oneof: "kind" },
+    { no: 3, name: "bool_value", kind: "scalar", T: 8 /* ScalarType.BOOL */, oneof: "kind" },
+    { no: 4, name: "int64_value", kind: "scalar", T: 3 /* ScalarType.INT64 */, oneof: "kind" },
+    { no: 5, name: "uint64_value", kind: "scalar", T: 4 /* ScalarType.UINT64 */, oneof: "kind" },
+    { no: 6, name: "double_value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, oneof: "kind" },
+    { no: 7, name: "string_value", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "kind" },
+    { no: 8, name: "bytes_value", kind: "scalar", T: 12 /* ScalarType.BYTES */, oneof: "kind" },
+    { no: 9, name: "enum_value", kind: "message", T: EnumValue, oneof: "kind" },
+    { no: 10, name: "message_value", kind: "message", T: Any, oneof: "kind" },
+    { no: 11, name: "map_value", kind: "message", T: MapValue, oneof: "kind" },
+    { no: 12, name: "list_value", kind: "message", T: ListValue, oneof: "kind" },
+    { no: 13, name: "type_value", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "kind" },
+    { no: 14, name: "callable_value", kind: "message", T: CallableValue, oneof: "kind" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Value {
@@ -450,7 +395,7 @@ export class MapValue_Entry extends Message<MapValue_Entry> {
   /**
    * The key.
    *
-   * Must be unique with in the map.
+   * Must be unique within the map.
    * Currently only boolean, int, uint, and string values can be keys.
    *
    * @generated from field: workflowasm.lang.v1.Value key = 1;
@@ -496,50 +441,114 @@ export class MapValue_Entry extends Message<MapValue_Entry> {
 /**
  * A closure over a function.
  *
- * @generated from message workflowasm.lang.v1.ClosureValue
+ * @generated from message workflowasm.lang.v1.CallableValue
  */
-export class ClosureValue extends Message<ClosureValue> {
+export class CallableValue extends Message<CallableValue> {
+  /**
+   * Package where the function resides
+   *
+   * @generated from field: string package = 1;
+   */
+  package = "";
+
   /**
    * A string identifying the code for the function that was closed over
    *
-   * @generated from field: string function = 1;
+   * @generated from field: string id = 2;
    */
-  function = "";
+  id = "";
 
   /**
-   * State of captured closure variables, stored by id. If empty, no variables
-   * were captured by the closure.
+   * A string naming the semantic version of the target function
    *
-   * @generated from field: string closure_id = 2;
+   * @generated from field: string semver = 3;
    */
-  closureId = "";
+  semver = "";
 
-  constructor(data?: PartialMessage<ClosureValue>) {
+  /**
+   * State of the callable's closure, if any
+   *
+   * @generated from field: workflowasm.lang.v1.CallableValue.Closure closure = 4;
+   */
+  closure?: CallableValue_Closure;
+
+  constructor(data?: PartialMessage<CallableValue>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "workflowasm.lang.v1.ClosureValue";
+  static readonly typeName = "workflowasm.lang.v1.CallableValue";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "function", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "closure_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "package", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "semver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "closure", kind: "message", T: CallableValue_Closure },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ClosureValue {
-    return new ClosureValue().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CallableValue {
+    return new CallableValue().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ClosureValue {
-    return new ClosureValue().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CallableValue {
+    return new CallableValue().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ClosureValue {
-    return new ClosureValue().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CallableValue {
+    return new CallableValue().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ClosureValue | PlainMessage<ClosureValue> | undefined, b: ClosureValue | PlainMessage<ClosureValue> | undefined): boolean {
-    return proto3.util.equals(ClosureValue, a, b);
+  static equals(a: CallableValue | PlainMessage<CallableValue> | undefined, b: CallableValue | PlainMessage<CallableValue> | undefined): boolean {
+    return proto3.util.equals(CallableValue, a, b);
+  }
+}
+
+/**
+ * Serializable description of a function closure
+ *
+ * @generated from message workflowasm.lang.v1.CallableValue.Closure
+ */
+export class CallableValue_Closure extends Message<CallableValue_Closure> {
+  /**
+   * Initial segment of bound arguments
+   *
+   * @generated from field: repeated workflowasm.lang.v1.Value bound_args = 1;
+   */
+  boundArgs: Value[] = [];
+
+  /**
+   * Scoped clsure entries
+   *
+   * @generated from field: workflowasm.lang.v1.MapValue captures = 2;
+   */
+  captures?: MapValue;
+
+  constructor(data?: PartialMessage<CallableValue_Closure>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "workflowasm.lang.v1.CallableValue.Closure";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "bound_args", kind: "message", T: Value, repeated: true },
+    { no: 2, name: "captures", kind: "message", T: MapValue },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CallableValue_Closure {
+    return new CallableValue_Closure().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CallableValue_Closure {
+    return new CallableValue_Closure().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CallableValue_Closure {
+    return new CallableValue_Closure().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CallableValue_Closure | PlainMessage<CallableValue_Closure> | undefined, b: CallableValue_Closure | PlainMessage<CallableValue_Closure> | undefined): boolean {
+    return proto3.util.equals(CallableValue_Closure, a, b);
   }
 }
 
